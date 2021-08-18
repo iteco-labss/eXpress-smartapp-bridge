@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartApp bridge testing</title>
+</head>
+
+<body>
+  <script>
+    // Add get param 'platform' to force load ios bridge
+    const params = new URLSearchParams(location.search);
+    const platform = params.get('platform')
+    if (platform !== 'ios') {
+      location.search = "?platform=ios"
+    }
+
+    // Emulate iOS listener
+    window.webkit = {
+      messageHandlers: {
+        express: {
+          postMessage: ({ ref, handler, payload }) => {
+            console.log('[ios recv]', ref, handler, payload)
+            setTimeout(() => {
+              window.handleIosEvent(
+                {
+                  ref,
+                  data: {
+                    type: 'some-type',
+                    payload: {
+                      value_data: 'value2',
+                    },
+                  }
+                }
+              )
+            }, 1000)
+          },
+        }
+      }
+    }
+  </script>
+  <script src="../build/umd/index.js"></script>
+  <h1>Test SmartApp bridge for iOS</h1>
+  <h2>(See in console)</h2>
+  <button onclick="sendMessageToClient()">Message with response smartApp->Client</button>
+  <button onclick="handleMessageFromClient()">Message Client->smartApp</button>
+  <script>
+    SmartAppBridge.onRecieve(data => {
+      console.log('[smartapp recv]', data)
+    })
+
+    function sendMessageToClient() {
+      SmartAppBridge
+        .send({ type: 'some-type', handler: 'botx', payload: { valueData: 'data1' } })
+        .then(data => {
+           console.log('[smartapp recv]', data)
+        })
+    }
+
+    function handleMessageFromClient() {
+      window.handleIosEvent(
+        {
+          data: {
+            type: 'notification',
+            payload: {
+              value_data: 'value3',
+            },
+          },
+        },
+      )
+    }
+  </script>
+</body>
+
+</html>
