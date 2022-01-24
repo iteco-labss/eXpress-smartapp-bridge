@@ -6,19 +6,45 @@ Andriod, iOS and Web clients supported.
 All types can be found [here](https://smartapp.ccsteam.xyz/smartapp-bridge/).
 
 ### Send event to eXpress
+
 ```js
 SmartAppBridge
-  .send((
+  .sendClientEvent(
     {
-      type: 'get_weather',
-      handler: 'botx',
-      payload: {
+      method: 'get_weather',
+      params: {
         city: 'Moscow',
       },
-      timeout: 10000, // timeout is optional, default 30000
+      files: []
     }
-  ))
-  .then(({ type, payload })
+  )
+  .then(data => {
+    // Handle response
+    console.log('response', data)
+  })
+  .then(({ type: method, handler: express, payload: params, files }) => {
+    // Handle response data type, payload
+  })
+  .catch(() => {
+    // Do something on timeout
+  })
+```
+
+```js
+SmartAppBridge
+  .sendBotEvent(
+    {
+      method: 'get_weather',
+      params: {
+        city: 'Moscow',
+      },
+    }
+  )
+  .then(data => {
+    // Handle response
+    console.log('response', data)
+  })
+  .then(({ type: method, handler: botx, payload: params }) => {
     // Handle response data type, payload
   })
   .catch(() => {

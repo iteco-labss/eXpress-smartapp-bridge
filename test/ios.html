@@ -52,7 +52,7 @@
 
     function sendMessageToClient() {
       SmartAppBridge
-        .send({ type: 'some-type', handler: 'botx', payload: { valueData: 'data1' } })
+        .sendBotEvent({ method: 'some-type', params: { valueData: 'data1' } })
         .then(data => {
            console.log('[smartapp recv]', data)
         })

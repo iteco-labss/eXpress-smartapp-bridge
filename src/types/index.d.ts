@@ -22,6 +22,6 @@ declare global {
       },
     },
   }
-  /* eslint-enable functional/prefer-type-literal */
   /* eslint-enable functional/prefer-readonly-type */
+  /* eslint-enable functional/prefer-type-literal */
 }

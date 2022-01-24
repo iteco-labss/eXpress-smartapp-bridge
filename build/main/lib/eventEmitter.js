@@ -12,7 +12,7 @@ const eventemitter3_1 = __importDefault(require("eventemitter3"));
  *
  * // promise will be rejected in 20 secs
  * // if no one event has been received with type 'ref-uuid-value'
- * // othervise promise will be fulfilled with payload object
+ * // otherwise promise will be fulfilled with payload object
  * const promise = emitter.onceWithTimeout('ref-uuid-value', 20000)
  * ```
  */

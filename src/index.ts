@@ -3,9 +3,9 @@ import getPlatform from './lib/platformDetector'
 import AndroidBridge from './lib/platforms/android'
 import IosBridge from './lib/platforms/ios'
 import WebBridge from './lib/platforms/web'
-import { BridgeInterface } from './types'
+import { Bridge } from './types'
 
-const getBridge = (): BridgeInterface | null => {
+const getBridge = (): Bridge | null => {
   const platform = getPlatform()
 
   switch (platform) {

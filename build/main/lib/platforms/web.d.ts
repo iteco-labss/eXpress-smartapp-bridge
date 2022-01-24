@@ -1,49 +1,68 @@
-import { BridgeInterface, BridgeSendFuncArgs, EventEmitterCallback } from '../../types';
-declare class WebBridge implements BridgeInterface {
-    /** @ignore */
+import { Bridge, BridgeSendBotEventParams, BridgeSendClientEventParams, BridgeSendEventParams, EventEmitterCallback } from '../../types';
+declare class WebBridge implements Bridge {
     private readonly eventEmitter;
-    /** @ignore */
     constructor();
-    /** @ignore */
     addGlobalListener(): void;
     /**
      * Set callback function to handle events without **ref**
      * (notifications for example).
      *
      * ```js
-     * bridge.onRecieve(({ type, handler, payload }) => {
+     * bridge.onReceive(({ type, handler, payload }) => {
      *   // Handle event data
      *   console.log('event', type, handler, payload)
      * })
      * ```
      * @param callback - Callback function.
      */
-    onRecieve(callback: EventEmitterCallback): void;
+    onReceive(callback: EventEmitterCallback): void;
+    protected sendEvent({ handler, method, params, files, timeout }: BridgeSendEventParams): Promise<import("../../types").EmitterEventPayload>;
     /**
      * Send event and wait response from express client.
      *
      * ```js
      * bridge
-     *   .send(
+     *   .sendClientEvent(
      *     {
-     *       type: 'get_weather',
-     *       handler: 'botx',
-     *       payload: {
+     *       method: 'get_weather',
+     *       params: {
      *         city: 'Moscow',
      *       },
      *     }
      *   )
      *   .then(data => {
      *     // Handle response
-     *     console.log('respose', data)
+     *     console.log('response', data)
      *   })
      * ```
-     * @param ref - UUID to detect express response.
-     * @param type - Event type.
-     * @param handler - Set client/server side which is handle this event.
+     * @param method - Event type.
+     * @param params
+     * @param files
      * @param timeout - Timeout in ms.
-     * @returns Promise.
      */
-    send({ type, handler, payload, timeout }: BridgeSendFuncArgs): Promise<import("../../types").EmitterEventPayload>;
+    sendBotEvent({ method, params, files, timeout }: BridgeSendBotEventParams): Promise<import("../../types").EmitterEventPayload>;
+    /**
+     * Send event and wait response from express client.
+     *
+     * ```js
+     * bridge
+     *   .sendClientEvent(
+     *     {
+     *       method: 'get_weather',
+     *       params: {
+     *         city: 'Moscow',
+     *       },
+     *     }
+     *   )
+     *   .then(data => {
+     *     // Handle response
+     *     console.log('response', data)
+     *   })
+     * ```
+     * @param method - Event type.
+     * @param params
+     * @param timeout - Timeout in ms.
+     */
+    sendClientEvent({ method, params, timeout }: BridgeSendClientEventParams): Promise<import("../../types").EmitterEventPayload>;
 }
 export default WebBridge;

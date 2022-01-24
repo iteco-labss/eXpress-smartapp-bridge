@@ -1,6 +1,5 @@
 import { PLATFORM } from './constants'
 
-/** @ignore */
 const getPlatformByGetParam = (): PLATFORM => {
   const platform = new URLSearchParams(location.search).get('platform')
 
@@ -10,7 +9,6 @@ const getPlatformByGetParam = (): PLATFORM => {
   return PLATFORM.UNKNOWN
 }
 
-/** @ignore */
 const detectPlatformByUserAgent = (): PLATFORM => {
   if (/android/i.test(navigator.userAgent)) {
     return PLATFORM.ANDROID

@@ -11,7 +11,6 @@
         PLATFORM["ANDROID"] = "android";
         PLATFORM["UNKNOWN"] = "unknown";
     })(PLATFORM || (PLATFORM = {}));
-    /** @ignore */
     var EVENT_TYPE;
     (function (EVENT_TYPE) {
         EVENT_TYPE["RECEIVE"] = "recv";
@@ -24,8 +23,8 @@
     })(HANDLER || (HANDLER = {}));
     const RESPONSE_TIMEOUT = 30000;
     const WEB_COMMAND_TYPE = 'smartapp';
+    const WEB_COMMAND_TYPE_RPC = 'smartapp_rpc';
 
-    /** @ignore */
     const getPlatformByGetParam = () => {
         const platform = new URLSearchParams(location.search).get('platform');
         const isValidPlatform = Object.values(PLATFORM).includes(platform);
@@ -33,7 +32,6 @@
             return platform;
         return PLATFORM.UNKNOWN;
     };
-    /** @ignore */
     const detectPlatformByUserAgent = () => {
         if (/android/i.test(navigator.userAgent)) {
             return PLATFORM.ANDROID;
@@ -1364,7 +1362,7 @@
      *
      * // promise will be rejected in 20 secs
      * // if no one event has been received with type 'ref-uuid-value'
-     * // othervise promise will be fulfilled with payload object
+     * // otherwise promise will be fulfilled with payload object
      * const promise = emitter.onceWithTimeout('ref-uuid-value', 20000)
      * ```
      */
@@ -1402,7 +1400,6 @@
     };
 
     class AndroidBridge {
-        /** @ignore */
         constructor() {
             this.hasCommunicationObject = typeof window.express !== 'undefined' && !!window.express.handleSmartAppEvent;
             this.eventEmitter = new ExtendedEventEmitter();
@@ -1411,10 +1408,10 @@
                 return;
             }
             // Expect json data as string
-            window.handleAndroidEvent = ({ ref, data, }) => {
+            window.handleAndroidEvent = ({ ref, data, files, }) => {
                 const { type, ...payload } = data;
                 const emitterType = ref || EVENT_TYPE.RECEIVE;
-                const event = { ref, type, payload: snakeCaseToCamelCase(payload) };
+                const event = { ref, type, payload: snakeCaseToCamelCase(payload), files };
                 this.eventEmitter.emit(emitterType, event);
             };
         }
@@ -1423,25 +1420,62 @@
          * (notifications for example).
          *
          * ```js
-         * bridge.onRecieve(({ type, handler, payload }) => {
+         * bridge.onReceive(({ type, handler, payload }) => {
          *   // Handle event data
          *   console.log('event', type, handler, payload)
          * })
          * ```
          * @param callback - Callback function.
          */
-        onRecieve(callback) {
+        onReceive(callback) {
             this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback);
+        }
+        sendEvent({ handler, method, params, files, timeout = RESPONSE_TIMEOUT }) {
+            if (!this.hasCommunicationObject)
+                return Promise.reject();
+            const ref = v4(); // UUID to detect express response.
+            const eventParams = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: camelCaseToSnakeCase(params) };
+            const event = JSON.stringify(files ? { ...eventParams, files: files?.map((file) => camelCaseToSnakeCase(file)) } : eventParams);
+            window.express.handleSmartAppEvent(event);
+            return this.eventEmitter.onceWithTimeout(ref, timeout);
         }
         /**
          * Send event and wait response from express client.
          *
          * ```js
          * bridge
-         *   .send(
+         *   .sendBotEvent(
+         *     {
+         *       method: 'get_weather',
+         *       params: {
+         *         city: 'Moscow',
+         *       },
+         *       files: []
+         *     }
+         *   )
+         *   .then(data => {
+         *     // Handle response
+         *     console.log('response', data)
+         *   })
+         * ```
+         * @param method - Event type.
+         * @param params
+         * @param files
+         * @param timeout - Timeout in ms.
+         * @returns Promise.
+         */
+        sendBotEvent({ method, params, files, timeout }) {
+            return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout });
+        }
+        /**
+         * Send event and wait response from express client.
+         *
+         * ```js
+         * bridge
+         *   .sendClientEvent(
          *     {
          *       type: 'get_weather',
-         *       handler: 'botx',
+         *       handler: 'express',
          *       payload: {
          *         city: 'Moscow',
          *       },
@@ -1449,28 +1483,20 @@
          *   )
          *   .then(data => {
          *     // Handle response
-         *     console.log('respose', data)
+         *     console.log('response', data)
          *   })
          * ```
-         * @param type - Event type.
-         * @param handler - Set client/server side which is handle this event.
+         * @param method - Event type.
+         * @param params
          * @param timeout - Timeout in ms.
          * @returns Promise.
          */
-        send({ type, handler, payload, timeout = RESPONSE_TIMEOUT }) {
-            if (!this.hasCommunicationObject)
-                return Promise.reject();
-            const ref = v4();
-            const event = JSON.stringify({ ref, type, handler, payload: camelCaseToSnakeCase(payload) });
-            window.express.handleSmartAppEvent(event);
-            if (!ref)
-                return Promise.reject();
-            return this.eventEmitter.onceWithTimeout(ref, timeout);
+        sendClientEvent({ method, params, timeout }) {
+            return this.sendEvent({ handler: HANDLER.EXPRESS, method, params, timeout });
         }
     }
 
     class IosBridge {
-        /** @ignore */
         constructor() {
             this.hasCommunicationObject =
                 window.webkit &&
@@ -1483,10 +1509,10 @@
                 return;
             }
             // Expect json data as string
-            window.handleIosEvent = ({ ref, data, }) => {
+            window.handleIosEvent = ({ ref, data, files, }) => {
                 const { type, ...payload } = data;
                 const emitterType = ref || EVENT_TYPE.RECEIVE;
-                const event = { ref, type, payload: snakeCaseToCamelCase(payload) };
+                const event = { ref, type, payload: snakeCaseToCamelCase(payload), files };
                 this.eventEmitter.emit(emitterType, event);
             };
         }
@@ -1502,18 +1528,54 @@
          * ```
          * @param callback - Callback function.
          */
-        onRecieve(callback) {
+        onReceive(callback) {
             this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback);
+        }
+        sendEvent({ handler, method, params, files, timeout = RESPONSE_TIMEOUT }) {
+            if (!this.hasCommunicationObject)
+                return Promise.reject();
+            const ref = v4(); // UUID to detect express response.
+            const eventProps = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: camelCaseToSnakeCase(params) };
+            const event = files ? { ...eventProps, files: files?.map((file) => camelCaseToSnakeCase(file)) } : eventProps;
+            window.webkit.messageHandlers.express.postMessage(event);
+            return this.eventEmitter.onceWithTimeout(ref, timeout);
         }
         /**
          * Send event and wait response from express client.
          *
          * ```js
          * bridge
-         *   .send(
+         *   .sendBotEvent(
+         *     {
+         *       method: 'get_weather',
+         *       params: {
+         *         city: 'Moscow',
+         *       },
+         *       files: []
+         *     }
+         *   )
+         *   .then(data => {
+         *     // Handle response
+         *     console.log('response', data)
+         *   })
+         * ```
+         * @param method - Event type.
+         * @param params
+         * @param files
+         * @param timeout - Timeout in ms.
+         */
+        sendBotEvent({ method, params, files, timeout = RESPONSE_TIMEOUT }) {
+            return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout });
+        }
+        /**
+         * Send event and wait response from express client.
+         *
+         * ```js
+         * bridge
+         *   .sendClientEvent(
          *     {
          *       type: 'get_weather',
-         *       handler: 'botx',
+         *       handler: 'express',
          *       payload: {
          *         city: 'Moscow',
          *       },
@@ -1521,41 +1583,32 @@
          *   )
          *   .then(data => {
          *     // Handle response
-         *     console.log('respose', data)
+         *     console.log('response', data)
          *   })
          * ```
-         * @param type - Event type.
-         * @param handler - Set client/server side which is handle this event.
+         * @param method - Event type.
+         * @param params
          * @param timeout - Timeout in ms.
-         * @returns Promise.
          */
-        send({ type, handler, payload, timeout = RESPONSE_TIMEOUT }) {
-            if (!this.hasCommunicationObject)
-                return Promise.reject();
-            const ref = v4();
-            const event = { ref, type, handler, payload: camelCaseToSnakeCase(payload) };
-            window.webkit.messageHandlers.express.postMessage(event);
-            return this.eventEmitter.onceWithTimeout(ref, timeout);
+        sendClientEvent({ method, params, timeout = RESPONSE_TIMEOUT }) {
+            return this.sendEvent({ handler: HANDLER.EXPRESS, method, params, timeout });
         }
     }
 
     class WebBridge {
-        /** @ignore */
         constructor() {
             this.eventEmitter = new ExtendedEventEmitter();
             this.addGlobalListener();
         }
-        /** @ignore */
         addGlobalListener() {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             window.addEventListener('message', (event) => {
                 if (typeof event.data !== 'object' ||
                     typeof event.data.data !== 'object' ||
                     typeof event.data.data.type !== 'string')
                     return;
-                const { ref, data: { type, ...payload }, } = event.data;
+                const { ref, data: { type, ...payload }, files, } = event.data;
                 const emitterType = ref || EVENT_TYPE.RECEIVE;
-                this.eventEmitter.emit(emitterType, { ref, type, payload });
+                this.eventEmitter.emit(emitterType, { ref, type, payload, files });
             });
         }
         /**
@@ -1563,48 +1616,75 @@
          * (notifications for example).
          *
          * ```js
-         * bridge.onRecieve(({ type, handler, payload }) => {
+         * bridge.onReceive(({ type, handler, payload }) => {
          *   // Handle event data
          *   console.log('event', type, handler, payload)
          * })
          * ```
          * @param callback - Callback function.
          */
-        onRecieve(callback) {
+        onReceive(callback) {
             this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback);
+        }
+        sendEvent({ handler, method, params, files, timeout = RESPONSE_TIMEOUT }) {
+            const ref = v4(); // UUID to detect express response.
+            const payload = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: params };
+            window.parent.postMessage({
+                type: WEB_COMMAND_TYPE,
+                payload: files ? { ...payload, files } : payload,
+            }, '*');
+            return this.eventEmitter.onceWithTimeout(ref, timeout);
         }
         /**
          * Send event and wait response from express client.
          *
          * ```js
          * bridge
-         *   .send(
+         *   .sendClientEvent(
          *     {
-         *       type: 'get_weather',
-         *       handler: 'botx',
-         *       payload: {
+         *       method: 'get_weather',
+         *       params: {
          *         city: 'Moscow',
          *       },
          *     }
          *   )
          *   .then(data => {
          *     // Handle response
-         *     console.log('respose', data)
+         *     console.log('response', data)
          *   })
          * ```
-         * @param ref - UUID to detect express response.
-         * @param type - Event type.
-         * @param handler - Set client/server side which is handle this event.
+         * @param method - Event type.
+         * @param params
+         * @param files
          * @param timeout - Timeout in ms.
-         * @returns Promise.
          */
-        send({ type, handler, payload, timeout = RESPONSE_TIMEOUT }) {
-            const ref = v4();
-            window.parent.postMessage({
-                type: WEB_COMMAND_TYPE,
-                payload: { ref, type, handler, payload },
-            }, '*');
-            return this.eventEmitter.onceWithTimeout(ref, timeout);
+        sendBotEvent({ method, params, files, timeout }) {
+            return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout });
+        }
+        /**
+         * Send event and wait response from express client.
+         *
+         * ```js
+         * bridge
+         *   .sendClientEvent(
+         *     {
+         *       method: 'get_weather',
+         *       params: {
+         *         city: 'Moscow',
+         *       },
+         *     }
+         *   )
+         *   .then(data => {
+         *     // Handle response
+         *     console.log('response', data)
+         *   })
+         * ```
+         * @param method - Event type.
+         * @param params
+         * @param timeout - Timeout in ms.
+         */
+        sendClientEvent({ method, params, timeout }) {
+            return this.sendEvent({ handler: HANDLER.EXPRESS, method, params, timeout });
         }
     }
 

@@ -5,8 +5,10 @@ type EmitterEventPayload = {
   readonly type: string
   readonly handler: HANDLER
   readonly payload: object | undefined
+  readonly files?: object
 }
 
 type EmitterEventType = EVENT_TYPE | string
 
 type EventEmitterCallback = (event: EmitterEventPayload) => void
+

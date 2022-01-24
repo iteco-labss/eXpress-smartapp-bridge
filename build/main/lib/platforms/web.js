@@ -18,22 +18,19 @@ const uuid_1 = require("uuid");
 const constants_1 = require("../constants");
 const eventEmitter_1 = __importDefault(require("../eventEmitter"));
 class WebBridge {
-    /** @ignore */
     constructor() {
         this.eventEmitter = new eventEmitter_1.default();
         this.addGlobalListener();
     }
-    /** @ignore */
     addGlobalListener() {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         window.addEventListener('message', (event) => {
             if (typeof event.data !== 'object' ||
                 typeof event.data.data !== 'object' ||
                 typeof event.data.data.type !== 'string')
                 return;
-            const _a = event.data, { ref } = _a, _b = _a.data, { type } = _b, payload = __rest(_b, ["type"]);
+            const _a = event.data, { ref } = _a, _b = _a.data, { type } = _b, payload = __rest(_b, ["type"]), { files } = _a;
             const emitterType = ref || constants_1.EVENT_TYPE.RECEIVE;
-            this.eventEmitter.emit(emitterType, { ref, type, payload });
+            this.eventEmitter.emit(emitterType, { ref, type, payload, files });
         });
     }
     /**
@@ -41,49 +38,76 @@ class WebBridge {
      * (notifications for example).
      *
      * ```js
-     * bridge.onRecieve(({ type, handler, payload }) => {
+     * bridge.onReceive(({ type, handler, payload }) => {
      *   // Handle event data
      *   console.log('event', type, handler, payload)
      * })
      * ```
      * @param callback - Callback function.
      */
-    onRecieve(callback) {
+    onReceive(callback) {
         this.eventEmitter.on(constants_1.EVENT_TYPE.RECEIVE, callback);
+    }
+    sendEvent({ handler, method, params, files, timeout = constants_1.RESPONSE_TIMEOUT }) {
+        const ref = uuid_1.v4(); // UUID to detect express response.
+        const payload = { ref, type: constants_1.WEB_COMMAND_TYPE_RPC, method, handler, payload: params };
+        window.parent.postMessage({
+            type: constants_1.WEB_COMMAND_TYPE,
+            payload: files ? Object.assign(Object.assign({}, payload), { files }) : payload,
+        }, '*');
+        return this.eventEmitter.onceWithTimeout(ref, timeout);
     }
     /**
      * Send event and wait response from express client.
      *
      * ```js
      * bridge
-     *   .send(
+     *   .sendClientEvent(
      *     {
-     *       type: 'get_weather',
-     *       handler: 'botx',
-     *       payload: {
+     *       method: 'get_weather',
+     *       params: {
      *         city: 'Moscow',
      *       },
      *     }
      *   )
      *   .then(data => {
      *     // Handle response
-     *     console.log('respose', data)
+     *     console.log('response', data)
      *   })
      * ```
-     * @param ref - UUID to detect express response.
-     * @param type - Event type.
-     * @param handler - Set client/server side which is handle this event.
+     * @param method - Event type.
+     * @param params
+     * @param files
      * @param timeout - Timeout in ms.
-     * @returns Promise.
      */
-    send({ type, handler, payload, timeout = constants_1.RESPONSE_TIMEOUT }) {
-        const ref = uuid_1.v4();
-        window.parent.postMessage({
-            type: constants_1.WEB_COMMAND_TYPE,
-            payload: { ref, type, handler, payload },
-        }, '*');
-        return this.eventEmitter.onceWithTimeout(ref, timeout);
+    sendBotEvent({ method, params, files, timeout }) {
+        return this.sendEvent({ handler: constants_1.HANDLER.BOTX, method, params, files, timeout });
+    }
+    /**
+     * Send event and wait response from express client.
+     *
+     * ```js
+     * bridge
+     *   .sendClientEvent(
+     *     {
+     *       method: 'get_weather',
+     *       params: {
+     *         city: 'Moscow',
+     *       },
+     *     }
+     *   )
+     *   .then(data => {
+     *     // Handle response
+     *     console.log('response', data)
+     *   })
+     * ```
+     * @param method - Event type.
+     * @param params
+     * @param timeout - Timeout in ms.
+     */
+    sendClientEvent({ method, params, timeout }) {
+        return this.sendEvent({ handler: constants_1.HANDLER.EXPRESS, method, params, timeout });
     }
 }
 exports.default = WebBridge;
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoid2ViLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vLi4vLi4vc3JjL2xpYi9wbGF0Zm9ybXMvd2ViLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7QUFBQSwrQkFBaUM7QUFHakMsNENBQTZFO0FBQzdFLG1FQUFrRDtBQUVsRCxNQUFNLFNBQVM7SUFJYixjQUFjO0lBQ2Q7UUFDRSxJQUFJLENBQUMsWUFBWSxHQUFHLElBQUksc0JBQW9CLEVBQUUsQ0FBQTtRQUM5QyxJQUFJLENBQUMsaUJBQWlCLEVBQUUsQ0FBQTtJQUMxQixDQUFDO0lBRUQsY0FBYztJQUNkLGlCQUFpQjtRQUNmLDhEQUE4RDtRQUM5RCxNQUFNLENBQUMsZ0JBQWdCLENBQUMsU0FBUyxFQUFFLENBQUMsS0FBd0IsRUFBUSxFQUFFO1lBQ3BFLElBQ0UsT0FBTyxLQUFLLENBQUMsSUFBSSxLQUFLLFFBQVE7Z0JBQzlCLE9BQU8sS0FBSyxDQUFDLElBQUksQ0FBQyxJQUFJLEtBQUssUUFBUTtnQkFDbkMsT0FBTyxLQUFLLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxJQUFJLEtBQUssUUFBUTtnQkFFeEMsT0FBTTtZQUVSLE1BQU0sS0FHRixLQUFLLENBQUMsSUFBSSxFQUhSLEVBQ0osR0FBRyxPQUVTLEVBRFosWUFBMEIsRUFBMUIsRUFBUSxJQUFJLE9BQWMsRUFBVCxPQUFPLGNBQWxCLFFBQW9CLENBQ2QsQ0FBQTtZQUNkLE1BQU0sV0FBVyxHQUFHLEdBQUcsSUFBSSxzQkFBVSxDQUFDLE9BQU8sQ0FBQTtZQUU3QyxJQUFJLENBQUMsWUFBWSxDQUFDLElBQUksQ0FBQyxXQUFXLEVBQUUsRUFBRSxHQUFHLEVBQUUsSUFBSSxFQUFFLE9BQU8sRUFBRSxDQUFDLENBQUE7UUFDN0QsQ0FBQyxDQUFDLENBQUE7SUFDSixDQUFDO0lBRUQ7Ozs7Ozs7Ozs7O09BV0c7SUFDSCxTQUFTLENBQUMsUUFBOEI7UUFDdEMsSUFBSSxDQUFDLFlBQVksQ0FBQyxFQUFFLENBQUMsc0JBQVUsQ0FBQyxPQUFPLEVBQUUsUUFBUSxDQUFDLENBQUE7SUFDcEQsQ0FBQztJQUVEOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7T0F3Qkc7SUFDSCxJQUFJLENBQUMsRUFBRSxJQUFJLEVBQUUsT0FBTyxFQUFFLE9BQU8sRUFBRSxPQUFPLEdBQUcsNEJBQWdCLEVBQXNCO1FBQzdFLE1BQU0sR0FBRyxHQUFHLFNBQUksRUFBRSxDQUFBO1FBRWxCLE1BQU0sQ0FBQyxNQUFNLENBQUMsV0FBVyxDQUN2QjtZQUNFLElBQUksRUFBRSw0QkFBZ0I7WUFDdEIsT0FBTyxFQUFFLEVBQUUsR0FBRyxFQUFFLElBQUksRUFBRSxPQUFPLEVBQUUsT0FBTyxFQUFFO1NBQ3pDLEVBQ0QsR0FBRyxDQUNKLENBQUE7UUFFRCxPQUFPLElBQUksQ0FBQyxZQUFZLENBQUMsZUFBZSxDQUFDLEdBQUcsRUFBRSxPQUFPLENBQUMsQ0FBQTtJQUN4RCxDQUFDO0NBQ0Y7QUFFRCxrQkFBZSxTQUFTLENBQUEifQ==
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoid2ViLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vLi4vLi4vc3JjL2xpYi9wbGF0Zm9ybXMvd2ViLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7QUFBQSwrQkFBaUM7QUFTakMsNENBQTRHO0FBQzVHLG1FQUFrRDtBQUVsRCxNQUFNLFNBQVM7SUFHYjtRQUNFLElBQUksQ0FBQyxZQUFZLEdBQUcsSUFBSSxzQkFBb0IsRUFBRSxDQUFBO1FBQzlDLElBQUksQ0FBQyxpQkFBaUIsRUFBRSxDQUFBO0lBQzFCLENBQUM7SUFFRCxpQkFBaUI7UUFDZixNQUFNLENBQUMsZ0JBQWdCLENBQUMsU0FBUyxFQUFFLENBQUMsS0FBbUIsRUFBUSxFQUFFO1lBQy9ELElBQ0UsT0FBTyxLQUFLLENBQUMsSUFBSSxLQUFLLFFBQVE7Z0JBQzlCLE9BQU8sS0FBSyxDQUFDLElBQUksQ0FBQyxJQUFJLEtBQUssUUFBUTtnQkFDbkMsT0FBTyxLQUFLLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxJQUFJLEtBQUssUUFBUTtnQkFFeEMsT0FBTTtZQUVSLE1BQU0sS0FJRixLQUFLLENBQUMsSUFBSSxFQUpSLEVBQ0osR0FBRyxPQUdTLEVBRlosWUFBMEIsRUFBMUIsRUFBUSxJQUFJLE9BQWMsRUFBVCxPQUFPLGNBQWxCLFFBQW9CLENBQUYsRUFGcEIsRUFHSixLQUFLLE9BQ08sQ0FBQTtZQUNkLE1BQU0sV0FBVyxHQUFHLEdBQUcsSUFBSSxzQkFBVSxDQUFDLE9BQU8sQ0FBQTtZQUU3QyxJQUFJLENBQUMsWUFBWSxDQUFDLElBQUksQ0FBQyxXQUFXLEVBQUUsRUFBRSxHQUFHLEVBQUUsSUFBSSxFQUFFLE9BQU8sRUFBRSxLQUFLLEVBQUUsQ0FBQyxDQUFBO1FBQ3BFLENBQUMsQ0FBQyxDQUFBO0lBQ0osQ0FBQztJQUVEOzs7Ozs7Ozs7OztPQVdHO0lBQ0gsU0FBUyxDQUFDLFFBQThCO1FBQ3RDLElBQUksQ0FBQyxZQUFZLENBQUMsRUFBRSxDQUFDLHNCQUFVLENBQUMsT0FBTyxFQUFFLFFBQVEsQ0FBQyxDQUFBO0lBQ3BELENBQUM7SUFFUyxTQUFTLENBQUMsRUFBRSxPQUFPLEVBQUUsTUFBTSxFQUFFLE1BQU0sRUFBRSxLQUFLLEVBQUUsT0FBTyxHQUFHLDRCQUFnQixFQUF5QjtRQUN2RyxNQUFNLEdBQUcsR0FBRyxTQUFJLEVBQUUsQ0FBQSxDQUFDLG1DQUFtQztRQUN0RCxNQUFNLE9BQU8sR0FBRyxFQUFFLEdBQUcsRUFBRSxJQUFJLEVBQUUsZ0NBQW9CLEVBQUUsTUFBTSxFQUFFLE9BQU8sRUFBRSxPQUFPLEVBQUUsTUFBTSxFQUFFLENBQUE7UUFFckYsTUFBTSxDQUFDLE1BQU0sQ0FBQyxXQUFXLENBQ3ZCO1lBQ0UsSUFBSSxFQUFFLDRCQUFnQjtZQUN0QixPQUFPLEVBQUUsS0FBSyxDQUFDLENBQUMsaUNBQU0sT0FBTyxLQUFFLEtBQUssSUFBRyxDQUFDLENBQUMsT0FBTztTQUNqRCxFQUNELEdBQUcsQ0FDSixDQUFBO1FBRUQsT0FBTyxJQUFJLENBQUMsWUFBWSxDQUFDLGVBQWUsQ0FBQyxHQUFHLEVBQUUsT0FBTyxDQUFDLENBQUE7SUFDeEQsQ0FBQztJQUVEOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O09Bc0JHO0lBQ0gsWUFBWSxDQUFDLEVBQUUsTUFBTSxFQUFFLE1BQU0sRUFBRSxLQUFLLEVBQUUsT0FBTyxFQUE0QjtRQUN2RSxPQUFPLElBQUksQ0FBQyxTQUFTLENBQUMsRUFBRSxPQUFPLEVBQUUsbUJBQU8sQ0FBQyxJQUFJLEVBQUUsTUFBTSxFQUFFLE1BQU0sRUFBRSxLQUFLLEVBQUUsT0FBTyxFQUFFLENBQUMsQ0FBQTtJQUNsRixDQUFDO0lBRUQ7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztPQXFCRztJQUNILGVBQWUsQ0FBQyxFQUFFLE1BQU0sRUFBRSxNQUFNLEVBQUUsT0FBTyxFQUErQjtRQUN0RSxPQUFPLElBQUksQ0FBQyxTQUFTLENBQUMsRUFBRSxPQUFPLEVBQUUsbUJBQU8sQ0FBQyxPQUFPLEVBQUUsTUFBTSxFQUFFLE1BQU0sRUFBRSxPQUFPLEVBQUUsQ0FBQyxDQUFBO0lBQzlFLENBQUM7Q0FDRjtBQUVELGtCQUFlLFNBQVMsQ0FBQSJ9
