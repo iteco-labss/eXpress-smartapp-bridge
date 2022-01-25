@@ -7,7 +7,6 @@ import {
   BridgeSendEventParams,
   EventEmitterCallback,
 } from '../../types'
-import { camelCaseToSnakeCase, snakeCaseToCamelCase } from '../case'
 import { EVENT_TYPE, HANDLER, RESPONSE_TIMEOUT, WEB_COMMAND_TYPE_RPC } from '../constants'
 import ExtendedEventEmitter from '../eventEmitter'
 import log from '../logger'
@@ -63,8 +62,8 @@ class IosBridge implements Bridge {
       const event = {
         ref,
         type,
-        payload: snakeCaseToCamelCase(payload),
-        files: files?.map((file: any) => snakeCaseToCamelCase(file)),
+        payload: payload,
+        files: files,
       }
 
       this.eventEmitter.emit(emitterType, event)
@@ -103,11 +102,11 @@ class IosBridge implements Bridge {
       type: WEB_COMMAND_TYPE_RPC,
       method,
       handler,
-      payload: camelCaseToSnakeCase(params),
+      payload: params,
       guaranteed_delivery_required,
     }
 
-    const event = files ? { ...eventProps, files: files?.map((file: any) => camelCaseToSnakeCase(file)) } : eventProps
+    const event = files ? { ...eventProps, files: files?.map((file: any) => file) } : eventProps
 
     if (this.logsEnabled) console.log('Bridge ~ Outgoing event', JSON.stringify(event, null, '  '))
 
