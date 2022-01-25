@@ -7,7 +7,6 @@ import {
   BridgeSendEventParams,
   EventEmitterCallback,
 } from '../../types'
-import { camelCaseToSnakeCase, snakeCaseToCamelCase } from '../case'
 import { EVENT_TYPE, HANDLER, RESPONSE_TIMEOUT, WEB_COMMAND_TYPE_RPC } from '../constants'
 import ExtendedEventEmitter from '../eventEmitter'
 import log from '../logger'
@@ -44,7 +43,7 @@ class IosBridge implements Bridge {
       const { type, ...payload } = data
 
       const emitterType = ref || EVENT_TYPE.RECEIVE
-      const event = { ref, type, payload: snakeCaseToCamelCase(payload), files }
+      const event = { ref, type, payload: payload, files }
 
       this.eventEmitter.emit(emitterType, event)
     }
@@ -70,9 +69,9 @@ class IosBridge implements Bridge {
     if (!this.hasCommunicationObject) return Promise.reject()
 
     const ref = uuid() // UUID to detect express response.
-    const eventProps = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: camelCaseToSnakeCase(params) }
+    const eventProps = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: params }
 
-    const event = files ? { ...eventProps, files: files?.map((file: any) => camelCaseToSnakeCase(file)) } : eventProps
+    const event = files ? { ...eventProps, files: files?.map((file: any) => file) } : eventProps
 
     window.webkit.messageHandlers.express.postMessage(event)
 

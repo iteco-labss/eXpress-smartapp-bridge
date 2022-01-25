@@ -7,7 +7,6 @@ import {
   BridgeSendEventParams,
   EventEmitterCallback,
 } from '../../types'
-import { camelCaseToSnakeCase, snakeCaseToCamelCase } from '../case'
 import { EVENT_TYPE, HANDLER, RESPONSE_TIMEOUT, WEB_COMMAND_TYPE_RPC } from '../constants'
 import ExtendedEventEmitter from '../eventEmitter'
 import log from '../logger'
@@ -40,7 +39,7 @@ class AndroidBridge implements Bridge {
       const { type, ...payload } = data
 
       const emitterType = ref || EVENT_TYPE.RECEIVE
-      const event = { ref, type, payload: snakeCaseToCamelCase(payload), files }
+      const event = { ref, type, payload: payload, files }
 
       this.eventEmitter.emit(emitterType, event)
     }
@@ -66,9 +65,9 @@ class AndroidBridge implements Bridge {
     if (!this.hasCommunicationObject) return Promise.reject()
 
     const ref = uuid() // UUID to detect express response.
-    const eventParams = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: camelCaseToSnakeCase(params) }
+    const eventParams = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: params }
     const event = JSON.stringify(
-      files ? { ...eventParams, files: files?.map((file: any) => camelCaseToSnakeCase(file)) } : eventParams
+      files ? { ...eventParams, files: files?.map((file: any) => file) } : eventParams
     )
 
     window.express.handleSmartAppEvent(event)
