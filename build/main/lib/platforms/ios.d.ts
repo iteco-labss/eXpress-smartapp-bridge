@@ -2,6 +2,7 @@ import { Bridge, BridgeSendBotEventParams, BridgeSendClientEventParams, BridgeSe
 declare class IosBridge implements Bridge {
     private readonly eventEmitter;
     private readonly hasCommunicationObject;
+    logsEnabled: boolean;
     constructor();
     /**
      * Set callback function to handle events without **ref**
@@ -16,7 +17,7 @@ declare class IosBridge implements Bridge {
      * @param callback - Callback function.
      */
     onReceive(callback: EventEmitterCallback): void;
-    protected sendEvent({ handler, method, params, files, timeout }: BridgeSendEventParams): Promise<import("../../types").EmitterEventPayload>;
+    protected sendEvent({ handler, method, params, files, timeout, guaranteed_delivery_required, }: BridgeSendEventParams): Promise<import("../../types").EmitterEventPayload>;
     /**
      * Send event and wait response from express client.
      *
@@ -40,8 +41,9 @@ declare class IosBridge implements Bridge {
      * @param params
      * @param files
      * @param timeout - Timeout in ms.
+     * @param guaranteed_delivery_required - boolean.
      */
-    sendBotEvent({ method, params, files, timeout }: BridgeSendBotEventParams): Promise<import("../../types").EmitterEventPayload>;
+    sendBotEvent({ method, params, files, timeout, guaranteed_delivery_required, }: BridgeSendBotEventParams): Promise<import("../../types").EmitterEventPayload>;
     /**
      * Send event and wait response from express client.
      *
@@ -66,5 +68,23 @@ declare class IosBridge implements Bridge {
      * @param timeout - Timeout in ms.
      */
     sendClientEvent({ method, params, timeout }: BridgeSendClientEventParams): Promise<import("../../types").EmitterEventPayload>;
+    /**
+     * Enabling logs.
+     *
+     * ```js
+     * bridge
+     *   .enableLogs()
+     * ```
+     */
+    enableLogs(): void;
+    /**
+     * Disabling logs.
+     *
+     * ```js
+     * bridge
+     *   .disableLogs()
+     * ```
+     */
+    disableLogs(): void;
 }
 export default IosBridge;

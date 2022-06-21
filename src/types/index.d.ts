@@ -1,10 +1,6 @@
-export * from './eventEmitter.d'
-export * from './bridgeInterface.d'
-
-
+export * from './eventEmitter'
+export * from './bridgeInterface'
 declare global {
-  /* eslint-disable functional/prefer-type-literal */
-  /* eslint-disable functional/prefer-readonly-type */
   interface Window {
     // Android interface
     handleAndroidEvent: Function
@@ -19,9 +15,7 @@ declare global {
         express: {
           postMessage: (data: object) => void
         }
-      },
-    },
+      }
+    }
   }
-  /* eslint-enable functional/prefer-readonly-type */
-  /* eslint-enable functional/prefer-type-literal */
 }

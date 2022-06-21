@@ -1,5 +1,3 @@
-/* eslint-disable functional/functional-parameters */
-
 /** @ignore */
 const log = (...args: ReadonlyArray<unknown>) => {
   const text = args.map((arg: unknown): string => (typeof arg === 'string' ? arg : JSON.stringify(arg))).join(' ')

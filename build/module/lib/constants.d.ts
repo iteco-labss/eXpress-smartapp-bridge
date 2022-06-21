@@ -15,3 +15,4 @@ export declare enum HANDLER {
 export declare const RESPONSE_TIMEOUT = 30000;
 export declare const WEB_COMMAND_TYPE = "smartapp";
 export declare const WEB_COMMAND_TYPE_RPC = "smartapp_rpc";
+export declare const WEB_COMMAND_TYPE_RPC_LOGS = "smartAppLogs";
