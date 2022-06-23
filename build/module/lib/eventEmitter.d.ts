@@ -1,5 +1,5 @@
 import EventEmitter from 'eventemitter3';
-import { EmitterEventPayload, EmitterEventType } from '../types';
+import { EmitterEventPayload, EmitterEventType } from '../types/eventEmitter';
 /**
  * Extended Event Emitted class
  *

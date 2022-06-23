@@ -7,15 +7,24 @@ import {
   BridgeSendEventParams,
   EventEmitterCallback,
 } from '../../types'
-import { EVENT_TYPE, HANDLER, RESPONSE_TIMEOUT, WEB_COMMAND_TYPE, WEB_COMMAND_TYPE_RPC } from '../constants'
+import {
+  EVENT_TYPE,
+  HANDLER,
+  RESPONSE_TIMEOUT,
+  WEB_COMMAND_TYPE,
+  WEB_COMMAND_TYPE_RPC,
+  WEB_COMMAND_TYPE_RPC_LOGS,
+} from '../constants'
 import ExtendedEventEmitter from '../eventEmitter'
 
 class WebBridge implements Bridge {
   private readonly eventEmitter: ExtendedEventEmitter
+  logsEnabled: boolean
 
   constructor() {
     this.eventEmitter = new ExtendedEventEmitter()
     this.addGlobalListener()
+    this.logsEnabled = false
   }
 
   addGlobalListener() {
@@ -26,6 +35,8 @@ class WebBridge implements Bridge {
         typeof event.data.data.type !== 'string'
       )
         return
+
+      if (this.logsEnabled) console.log('Bridge ~ Incoming event', event.data)
 
       const {
         ref,
@@ -54,14 +65,24 @@ class WebBridge implements Bridge {
     this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback)
   }
 
-  protected sendEvent({ handler, method, params, files, timeout = RESPONSE_TIMEOUT }: BridgeSendEventParams) {
+  protected sendEvent({
+    handler,
+    method,
+    params,
+    files,
+    timeout = RESPONSE_TIMEOUT,
+    guaranteed_delivery_required = false,
+  }: BridgeSendEventParams) {
     const ref = uuid() // UUID to detect express response.
-    const payload = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: params }
+    const payload = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: params, guaranteed_delivery_required }
+    const event = files ? { ...payload, files } : payload
+
+    if (this.logsEnabled) console.log('Bridge ~ Outgoing event', event)
 
     window.parent.postMessage(
       {
         type: WEB_COMMAND_TYPE,
-        payload: files ? { ...payload, files } : payload,
+        payload: event,
       },
       '*'
     )
@@ -91,9 +112,10 @@ class WebBridge implements Bridge {
    * @param params
    * @param files
    * @param timeout - Timeout in ms.
+   * @param guaranteed_delivery_required - boolean.
    */
-  sendBotEvent({ method, params, files, timeout }: BridgeSendBotEventParams) {
-    return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout })
+  sendBotEvent({ method, params, files, timeout, guaranteed_delivery_required }: BridgeSendBotEventParams) {
+    return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout, guaranteed_delivery_required })
   }
 
   /**
@@ -120,6 +142,43 @@ class WebBridge implements Bridge {
    */
   sendClientEvent({ method, params, timeout }: BridgeSendClientEventParams) {
     return this.sendEvent({ handler: HANDLER.EXPRESS, method, params, timeout })
+  }
+
+  /**
+   * Enabling logs.
+   *
+   * ```js
+   * bridge
+   *   .enableLogs()
+   * ```
+   */
+  enableLogs() {
+    this.logsEnabled = true
+    const _log = console.log
+
+    console.log = function (...rest: unknown[]) {
+      window.parent.postMessage(
+        {
+          type: WEB_COMMAND_TYPE_RPC_LOGS,
+          payload: rest,
+        },
+        '*'
+      )
+
+      _log.apply(console, rest)
+    }
+  }
+
+  /**
+   * Disabling logs.
+   *
+   * ```js
+   * bridge
+   *   .disableLogs()
+   * ```
+   */
+  disableLogs() {
+    this.logsEnabled = false
   }
 }
 

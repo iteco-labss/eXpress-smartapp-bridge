@@ -2,21 +2,23 @@ import { HANDLER } from '../lib/constants'
 
 import { EmitterEventPayload, EventEmitterCallback } from './eventEmitter'
 
-type BridgeSendClientEventParams = {
+export type BridgeSendClientEventParams = {
   readonly method: string
   readonly params: object | undefined
-  readonly timeout: number
+  readonly timeout?: number
 }
 
-type BridgeSendBotEventParams = BridgeSendClientEventParams & {
+export type BridgeSendBotEventParams = BridgeSendClientEventParams & {
   readonly files?: any
+  readonly guaranteed_delivery_required?: boolean | undefined
 }
 
-type BridgeSendEventParams = BridgeSendClientEventParams & BridgeSendBotEventParams & {
-  readonly handler: HANDLER
-}
+export type BridgeSendEventParams = BridgeSendClientEventParams &
+  BridgeSendBotEventParams & {
+    readonly handler: HANDLER
+  }
 
-type Bridge = {
+export type Bridge = {
   readonly onReceive: (callback: EventEmitterCallback) => void
   readonly sendBotEvent: (event: BridgeSendBotEventParams) => Promise<EmitterEventPayload>
   readonly sendClientEvent: (event: BridgeSendClientEventParams) => Promise<EmitterEventPayload>

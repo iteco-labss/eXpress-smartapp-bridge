@@ -2,7 +2,7 @@
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.SmartAppBridge = factory());
-}(this, (function () { 'use strict';
+})(this, (function () { 'use strict';
 
     var PLATFORM;
     (function (PLATFORM) {
@@ -24,6 +24,7 @@
     const RESPONSE_TIMEOUT = 30000;
     const WEB_COMMAND_TYPE = 'smartapp';
     const WEB_COMMAND_TYPE_RPC = 'smartapp_rpc';
+    const WEB_COMMAND_TYPE_RPC_LOGS = 'smartAppLogs';
 
     const getPlatformByGetParam = () => {
         const platform = new URLSearchParams(location.search).get('platform');
@@ -1392,7 +1393,6 @@
         }
     }
 
-    /* eslint-disable functional/functional-parameters */
     /** @ignore */
     const log = (...args) => {
         const text = args.map((arg) => (typeof arg === 'string' ? arg : JSON.stringify(arg))).join(' ');
@@ -1400,18 +1400,33 @@
     };
 
     class AndroidBridge {
+        eventEmitter;
+        hasCommunicationObject;
+        logsEnabled;
         constructor() {
             this.hasCommunicationObject = typeof window.express !== 'undefined' && !!window.express.handleSmartAppEvent;
             this.eventEmitter = new ExtendedEventEmitter();
+            this.logsEnabled = false;
             if (!this.hasCommunicationObject) {
                 log('No method "express.handleSmartAppEvent", cannot send message to Android');
                 return;
             }
             // Expect json data as string
             window.handleAndroidEvent = ({ ref, data, files, }) => {
+                if (this.logsEnabled)
+                    console.log('Bridge ~ Incoming event', JSON.stringify({
+                        ref,
+                        data,
+                        files,
+                    }, null, 2));
                 const { type, ...payload } = data;
                 const emitterType = ref || EVENT_TYPE.RECEIVE;
-                const event = { ref, type, payload: snakeCaseToCamelCase(payload), files };
+                const event = {
+                    ref,
+                    type,
+                    payload: snakeCaseToCamelCase(payload),
+                    files: files?.map((file) => snakeCaseToCamelCase(file)),
+                };
                 this.eventEmitter.emit(emitterType, event);
             };
         }
@@ -1430,12 +1445,21 @@
         onReceive(callback) {
             this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback);
         }
-        sendEvent({ handler, method, params, files, timeout = RESPONSE_TIMEOUT }) {
+        sendEvent({ handler, method, params, files, timeout = RESPONSE_TIMEOUT, guaranteed_delivery_required = false, }) {
             if (!this.hasCommunicationObject)
                 return Promise.reject();
             const ref = v4(); // UUID to detect express response.
-            const eventParams = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: camelCaseToSnakeCase(params) };
+            const eventParams = {
+                ref,
+                type: WEB_COMMAND_TYPE_RPC,
+                method,
+                handler,
+                payload: camelCaseToSnakeCase(params),
+                guaranteed_delivery_required,
+            };
             const event = JSON.stringify(files ? { ...eventParams, files: files?.map((file) => camelCaseToSnakeCase(file)) } : eventParams);
+            if (this.logsEnabled)
+                console.log('Bridge ~ Outgoing event', JSON.stringify(event, null, '  '));
             window.express.handleSmartAppEvent(event);
             return this.eventEmitter.onceWithTimeout(ref, timeout);
         }
@@ -1462,10 +1486,11 @@
          * @param params
          * @param files
          * @param timeout - Timeout in ms.
+         * @param guaranteed_delivery_required - boolean.
          * @returns Promise.
          */
-        sendBotEvent({ method, params, files, timeout }) {
-            return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout });
+        sendBotEvent({ method, params, files, timeout, guaranteed_delivery_required }) {
+            return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout, guaranteed_delivery_required });
         }
         /**
          * Send event and wait response from express client.
@@ -1494,9 +1519,34 @@
         sendClientEvent({ method, params, timeout }) {
             return this.sendEvent({ handler: HANDLER.EXPRESS, method, params, timeout });
         }
+        /**
+         * Enabling logs.
+         *
+         * ```js
+         * bridge
+         *   .enableLogs()
+         * ```
+         */
+        enableLogs() {
+            this.logsEnabled = true;
+        }
+        /**
+         * Disabling logs.
+         *
+         * ```js
+         * bridge
+         *   .disableLogs()
+         * ```
+         */
+        disableLogs() {
+            this.logsEnabled = false;
+        }
     }
 
     class IosBridge {
+        eventEmitter;
+        hasCommunicationObject;
+        logsEnabled;
         constructor() {
             this.hasCommunicationObject =
                 window.webkit &&
@@ -1504,15 +1554,27 @@
                     window.webkit.messageHandlers.express &&
                     !!window.webkit.messageHandlers.express.postMessage;
             this.eventEmitter = new ExtendedEventEmitter();
+            this.logsEnabled = false;
             if (!this.hasCommunicationObject) {
                 log('No method "express.postMessage", cannot send message to iOS');
                 return;
             }
             // Expect json data as string
             window.handleIosEvent = ({ ref, data, files, }) => {
+                if (this.logsEnabled)
+                    console.log('Bridge ~ Incoming event', JSON.stringify({
+                        ref,
+                        data,
+                        files,
+                    }, null, 2));
                 const { type, ...payload } = data;
                 const emitterType = ref || EVENT_TYPE.RECEIVE;
-                const event = { ref, type, payload: snakeCaseToCamelCase(payload), files };
+                const event = {
+                    ref,
+                    type,
+                    payload: snakeCaseToCamelCase(payload),
+                    files: files?.map((file) => snakeCaseToCamelCase(file)),
+                };
                 this.eventEmitter.emit(emitterType, event);
             };
         }
@@ -1531,12 +1593,21 @@
         onReceive(callback) {
             this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback);
         }
-        sendEvent({ handler, method, params, files, timeout = RESPONSE_TIMEOUT }) {
+        sendEvent({ handler, method, params, files, timeout = RESPONSE_TIMEOUT, guaranteed_delivery_required = false, }) {
             if (!this.hasCommunicationObject)
                 return Promise.reject();
             const ref = v4(); // UUID to detect express response.
-            const eventProps = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: camelCaseToSnakeCase(params) };
+            const eventProps = {
+                ref,
+                type: WEB_COMMAND_TYPE_RPC,
+                method,
+                handler,
+                payload: camelCaseToSnakeCase(params),
+                guaranteed_delivery_required,
+            };
             const event = files ? { ...eventProps, files: files?.map((file) => camelCaseToSnakeCase(file)) } : eventProps;
+            if (this.logsEnabled)
+                console.log('Bridge ~ Outgoing event', JSON.stringify(event, null, '  '));
             window.webkit.messageHandlers.express.postMessage(event);
             return this.eventEmitter.onceWithTimeout(ref, timeout);
         }
@@ -1563,9 +1634,10 @@
          * @param params
          * @param files
          * @param timeout - Timeout in ms.
+         * @param guaranteed_delivery_required - boolean.
          */
-        sendBotEvent({ method, params, files, timeout = RESPONSE_TIMEOUT }) {
-            return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout });
+        sendBotEvent({ method, params, files, timeout = RESPONSE_TIMEOUT, guaranteed_delivery_required, }) {
+            return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout, guaranteed_delivery_required });
         }
         /**
          * Send event and wait response from express client.
@@ -1593,12 +1665,37 @@
         sendClientEvent({ method, params, timeout = RESPONSE_TIMEOUT }) {
             return this.sendEvent({ handler: HANDLER.EXPRESS, method, params, timeout });
         }
+        /**
+         * Enabling logs.
+         *
+         * ```js
+         * bridge
+         *   .enableLogs()
+         * ```
+         */
+        enableLogs() {
+            this.logsEnabled = true;
+        }
+        /**
+         * Disabling logs.
+         *
+         * ```js
+         * bridge
+         *   .disableLogs()
+         * ```
+         */
+        disableLogs() {
+            this.logsEnabled = false;
+        }
     }
 
     class WebBridge {
+        eventEmitter;
+        logsEnabled;
         constructor() {
             this.eventEmitter = new ExtendedEventEmitter();
             this.addGlobalListener();
+            this.logsEnabled = false;
         }
         addGlobalListener() {
             window.addEventListener('message', (event) => {
@@ -1606,6 +1703,8 @@
                     typeof event.data.data !== 'object' ||
                     typeof event.data.data.type !== 'string')
                     return;
+                if (this.logsEnabled)
+                    console.log('Bridge ~ Incoming event', event.data);
                 const { ref, data: { type, ...payload }, files, } = event.data;
                 const emitterType = ref || EVENT_TYPE.RECEIVE;
                 this.eventEmitter.emit(emitterType, { ref, type, payload, files });
@@ -1626,12 +1725,15 @@
         onReceive(callback) {
             this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback);
         }
-        sendEvent({ handler, method, params, files, timeout = RESPONSE_TIMEOUT }) {
+        sendEvent({ handler, method, params, files, timeout = RESPONSE_TIMEOUT, guaranteed_delivery_required = false, }) {
             const ref = v4(); // UUID to detect express response.
-            const payload = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: params };
+            const payload = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: params, guaranteed_delivery_required };
+            const event = files ? { ...payload, files } : payload;
+            if (this.logsEnabled)
+                console.log('Bridge ~ Outgoing event', event);
             window.parent.postMessage({
                 type: WEB_COMMAND_TYPE,
-                payload: files ? { ...payload, files } : payload,
+                payload: event,
             }, '*');
             return this.eventEmitter.onceWithTimeout(ref, timeout);
         }
@@ -1657,9 +1759,10 @@
          * @param params
          * @param files
          * @param timeout - Timeout in ms.
+         * @param guaranteed_delivery_required - boolean.
          */
-        sendBotEvent({ method, params, files, timeout }) {
-            return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout });
+        sendBotEvent({ method, params, files, timeout, guaranteed_delivery_required }) {
+            return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout, guaranteed_delivery_required });
         }
         /**
          * Send event and wait response from express client.
@@ -1686,10 +1789,45 @@
         sendClientEvent({ method, params, timeout }) {
             return this.sendEvent({ handler: HANDLER.EXPRESS, method, params, timeout });
         }
+        /**
+         * Enabling logs.
+         *
+         * ```js
+         * bridge
+         *   .enableLogs()
+         * ```
+         */
+        enableLogs() {
+            this.logsEnabled = true;
+            const _log = console.log;
+            console.log = function (...rest) {
+                window.parent.postMessage({
+                    type: WEB_COMMAND_TYPE_RPC_LOGS,
+                    payload: rest,
+                }, '*');
+                _log.apply(console, rest);
+            };
+        }
+        /**
+         * Disabling logs.
+         *
+         * ```js
+         * bridge
+         *   .disableLogs()
+         * ```
+         */
+        disableLogs() {
+            this.logsEnabled = false;
+        }
     }
 
+    const LIB_VERSION = "1.0.7";
+
     const getBridge = () => {
+        if (process.env.NODE_ENV === 'test')
+            return null;
         const platform = getPlatform();
+        console.log('Bridge ~ version', LIB_VERSION);
         switch (platform) {
             case PLATFORM.ANDROID:
                 return new AndroidBridge();
@@ -1707,4 +1845,4 @@
 
     return index;
 
-})));
+}));

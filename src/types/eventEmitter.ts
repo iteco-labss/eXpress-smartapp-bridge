@@ -1,6 +1,6 @@
 import { EVENT_TYPE, HANDLER } from '../lib/constants'
 
-type EmitterEventPayload = {
+export type EmitterEventPayload = {
   readonly ref: string | undefined
   readonly type: string
   readonly handler: HANDLER
@@ -8,7 +8,7 @@ type EmitterEventPayload = {
   readonly files?: object
 }
 
-type EmitterEventType = EVENT_TYPE | string
+export type EmitterEventType = EVENT_TYPE | string
 
-type EventEmitterCallback = (event: EmitterEventPayload) => void
+export type EventEmitterCallback = (event: EmitterEventPayload) => void
 

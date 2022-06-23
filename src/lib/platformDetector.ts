@@ -17,7 +17,7 @@ const detectPlatformByUserAgent = (): PLATFORM => {
   if (
     (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.userAgent.includes('Mac') && 'ontouchend' in document)) &&
-    !window.MSStream
+    !(window as any).MSStream
   )
     return PLATFORM.IOS
 
