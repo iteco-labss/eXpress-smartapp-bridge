@@ -1,7 +1,8 @@
-import { Bridge, BridgeSendBotEventParams, BridgeSendClientEventParams, BridgeSendEventParams, EventEmitterCallback } from '../../types';
+import { Bridge, BridgeSendBotEventParams, BridgeSendClientEventParams, EventEmitterCallback } from '../../types';
 declare class WebBridge implements Bridge {
     private readonly eventEmitter;
     logsEnabled: boolean;
+    isRenameParamsEnabled: boolean;
     constructor();
     addGlobalListener(): void;
     /**
@@ -17,7 +18,7 @@ declare class WebBridge implements Bridge {
      * @param callback - Callback function.
      */
     onReceive(callback: EventEmitterCallback): void;
-    protected sendEvent({ handler, method, params, files, timeout, guaranteed_delivery_required, }: BridgeSendEventParams): Promise<import("../../types").EmitterEventPayload>;
+    private sendEvent;
     /**
      * Send event and wait response from express client.
      *
@@ -39,10 +40,11 @@ declare class WebBridge implements Bridge {
      * @param method - Event type.
      * @param params
      * @param files
+     * @param is_rename_params_fields - boolean.
      * @param timeout - Timeout in ms.
      * @param guaranteed_delivery_required - boolean.
      */
-    sendBotEvent({ method, params, files, timeout, guaranteed_delivery_required }: BridgeSendBotEventParams): Promise<import("../../types").EmitterEventPayload>;
+    sendBotEvent({ method, params, files, timeout, guaranteed_delivery_required, }: BridgeSendBotEventParams): Promise<import("../../types").EmitterEventPayload>;
     /**
      * Send event and wait response from express client.
      *
@@ -84,5 +86,21 @@ declare class WebBridge implements Bridge {
      * ```
      */
     disableLogs(): void;
+    /**
+     * Enabling renaming event params from camelCase to snake_case and vice versa
+     * ```js
+     * bridge
+     *    .enableRenameParams()
+     * ```
+     */
+    enableRenameParams(): void;
+    /**
+     * Enabling renaming event params from camelCase to snake_case and vice versa
+     * ```js
+     * bridge
+     *    .disableRenameParams()
+     * ```
+     */
+    disableRenameParams(): void;
 }
 export default WebBridge;

@@ -7,6 +7,7 @@ import {
   BridgeSendEventParams,
   EventEmitterCallback,
 } from '../../types'
+import { camelCaseToSnakeCase, snakeCaseToCamelCase } from '../case'
 import {
   EVENT_TYPE,
   HANDLER,
@@ -20,11 +21,13 @@ import ExtendedEventEmitter from '../eventEmitter'
 class WebBridge implements Bridge {
   private readonly eventEmitter: ExtendedEventEmitter
   logsEnabled: boolean
+  isRenameParamsEnabled: boolean
 
   constructor() {
     this.eventEmitter = new ExtendedEventEmitter()
     this.addGlobalListener()
     this.logsEnabled = false
+    this.isRenameParamsEnabled = true
   }
 
   addGlobalListener() {
@@ -43,9 +46,18 @@ class WebBridge implements Bridge {
         data: { type, ...payload },
         files,
       } = event.data
+
       const emitterType = ref || EVENT_TYPE.RECEIVE
 
-      this.eventEmitter.emit(emitterType, { ref, type, payload, files })
+      const eventFiles = this.isRenameParamsEnabled ?
+        files?.map((file: any) => snakeCaseToCamelCase(file)) : files
+
+      this.eventEmitter.emit(emitterType, {
+        ref,
+        type,
+        payload: this.isRenameParamsEnabled ? snakeCaseToCamelCase(payload) : payload,
+        files: eventFiles,
+      })
     })
   }
 
@@ -65,17 +77,28 @@ class WebBridge implements Bridge {
     this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback)
   }
 
-  protected sendEvent({
-    handler,
-    method,
-    params,
-    files,
-    timeout = RESPONSE_TIMEOUT,
-    guaranteed_delivery_required = false,
-  }: BridgeSendEventParams) {
+  private sendEvent({
+                      handler,
+                      method,
+                      params,
+                      files,
+                      timeout = RESPONSE_TIMEOUT,
+                      guaranteed_delivery_required = false,
+                    }: BridgeSendEventParams) {
     const ref = uuid() // UUID to detect express response.
-    const payload = { ref, type: WEB_COMMAND_TYPE_RPC, method, handler, payload: params, guaranteed_delivery_required }
-    const event = files ? { ...payload, files } : payload
+    const payload = {
+      ref,
+      type: WEB_COMMAND_TYPE_RPC,
+      method,
+      handler,
+      payload: this.isRenameParamsEnabled ? camelCaseToSnakeCase(params) : params,
+      guaranteed_delivery_required,
+    }
+
+    const eventFiles = this.isRenameParamsEnabled ?
+      files?.map((file: any) => camelCaseToSnakeCase(file)) : files
+
+    const event = files ? { ...payload, files: eventFiles } : payload
 
     if (this.logsEnabled) console.log('Bridge ~ Outgoing event', event)
 
@@ -111,11 +134,25 @@ class WebBridge implements Bridge {
    * @param method - Event type.
    * @param params
    * @param files
+   * @param is_rename_params_fields - boolean.
    * @param timeout - Timeout in ms.
    * @param guaranteed_delivery_required - boolean.
    */
-  sendBotEvent({ method, params, files, timeout, guaranteed_delivery_required }: BridgeSendBotEventParams) {
-    return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout, guaranteed_delivery_required })
+  sendBotEvent({
+                 method,
+                 params,
+                 files,
+                 timeout,
+                 guaranteed_delivery_required,
+               }: BridgeSendBotEventParams) {
+    return this.sendEvent({
+      handler: HANDLER.BOTX,
+      method,
+      params,
+      files,
+      timeout,
+      guaranteed_delivery_required,
+    })
   }
 
   /**
@@ -179,6 +216,30 @@ class WebBridge implements Bridge {
    */
   disableLogs() {
     this.logsEnabled = false
+  }
+
+  /**
+   * Enabling renaming event params from camelCase to snake_case and vice versa
+   * ```js
+   * bridge
+   *    .enableRenameParams()
+   * ```
+   */
+  enableRenameParams() {
+    this.isRenameParamsEnabled = true
+    console.log('Bridge ~ Enabled renaming event params from camelCase to snake_case and vice versa')
+  }
+
+  /**
+   * Enabling renaming event params from camelCase to snake_case and vice versa
+   * ```js
+   * bridge
+   *    .disableRenameParams()
+   * ```
+   */
+  disableRenameParams() {
+    this.isRenameParamsEnabled = false
+    console.log('Bridge ~ Disabled renaming event params from camelCase to snake_case and vice versa')
   }
 }
 

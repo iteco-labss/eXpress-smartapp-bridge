@@ -15,11 +15,13 @@ export type BridgeSendBotEventParams = BridgeSendClientEventParams & {
 
 export type BridgeSendEventParams = BridgeSendClientEventParams &
   BridgeSendBotEventParams & {
-    readonly handler: HANDLER
-  }
+  readonly handler: HANDLER
+}
 
 export type Bridge = {
   readonly onReceive: (callback: EventEmitterCallback) => void
   readonly sendBotEvent: (event: BridgeSendBotEventParams) => Promise<EmitterEventPayload>
   readonly sendClientEvent: (event: BridgeSendClientEventParams) => Promise<EmitterEventPayload>
+  readonly disableRenameParams: () => void
+  readonly enableRenameParams: () => void
 }
