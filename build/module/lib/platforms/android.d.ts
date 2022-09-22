@@ -3,6 +3,7 @@ declare class AndroidBridge implements Bridge {
     private readonly eventEmitter;
     private readonly hasCommunicationObject;
     logsEnabled: boolean;
+    isRenameParamsEnabled: boolean;
     constructor();
     /**
      * Set callback function to handle events without **ref**
@@ -88,5 +89,21 @@ declare class AndroidBridge implements Bridge {
      * ```
      */
     disableLogs(): void;
+    /**
+     * Enabling renaming event params from camelCase to snake_case and vice versa
+     * ```js
+     * bridge
+     *    .enableRenameParams()
+     * ```
+     */
+    enableRenameParams(): void;
+    /**
+     * Enabling renaming event params from camelCase to snake_case and vice versa
+     * ```js
+     * bridge
+     *    .disableRenameParams()
+     * ```
+     */
+    disableRenameParams(): void;
 }
 export default AndroidBridge;

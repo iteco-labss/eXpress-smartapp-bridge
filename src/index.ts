@@ -3,7 +3,7 @@ import getPlatform from './lib/platformDetector'
 import AndroidBridge from './lib/platforms/android'
 import IosBridge from './lib/platforms/ios'
 import WebBridge from './lib/platforms/web'
-import { Bridge } from './types/bridgeInterface'
+import { Bridge } from './types'
 import { LIB_VERSION } from './version'
 
 const getBridge = (): Bridge | null => {

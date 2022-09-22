@@ -2,14 +2,16 @@
 import camelCase from 'lodash/camelCase'
 import snakeCase from 'lodash/snakeCase'
 
+export const isUuid = (value: string) => {
+  return /[0-9a-fA-F-]{32}/.test(value)
+}
+
 export const snakeCaseToCamelCase = (data: any): any => {
   if (Array.isArray(data)) return data.map(snakeCaseToCamelCase)
-
   if (!data || data.constructor?.name !== 'Object') return data
-
   return Object.keys(data).reduce((result, key) => {
     const value = snakeCaseToCamelCase(data[key])
-    const keyValue = camelCase(key)
+    const keyValue = isUuid(key) ? key : camelCase(key)
     return { ...result, [keyValue]: value }
   }, {})
 }

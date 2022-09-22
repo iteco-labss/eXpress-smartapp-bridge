@@ -58,3 +58,15 @@ SmartAppBridge.onRecieve(({ type, payload }) => {
   // This callback triggers when eXpress client send data without ref
 })
 ```
+
+### Enable/Disable renaming event params from camelCase to snake_case and vice versa
+- Params are renamed from camelCase to snake_case and vice versa by default
+- Call after sending `ready` event
+
+```js
+SmartAppBridge.disableRenameParams()
+```
+
+```js
+SmartAppBridge.enableRenameParams()
+```
