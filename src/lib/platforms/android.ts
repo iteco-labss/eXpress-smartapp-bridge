@@ -89,7 +89,7 @@ class AndroidBridge implements Bridge {
     this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback)
   }
 
-  protected sendEvent({
+  private sendEvent({
                         handler,
                         method,
                         params,

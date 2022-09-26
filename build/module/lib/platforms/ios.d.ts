@@ -1,4 +1,4 @@
-import { Bridge, BridgeSendBotEventParams, BridgeSendClientEventParams, BridgeSendEventParams, EventEmitterCallback } from '../../types';
+import { Bridge, BridgeSendBotEventParams, BridgeSendClientEventParams, EventEmitterCallback } from '../../types';
 declare class IosBridge implements Bridge {
     private readonly eventEmitter;
     private readonly hasCommunicationObject;
@@ -18,7 +18,7 @@ declare class IosBridge implements Bridge {
      * @param callback - Callback function.
      */
     onReceive(callback: EventEmitterCallback): void;
-    protected sendEvent({ handler, method, params, files, timeout, guaranteed_delivery_required, }: BridgeSendEventParams): Promise<import("../../types").EmitterEventPayload>;
+    private sendEvent;
     /**
      * Send event and wait response from express client.
      *
