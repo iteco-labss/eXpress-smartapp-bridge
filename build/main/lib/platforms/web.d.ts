@@ -1,4 +1,4 @@
-import { Bridge, BridgeSendBotEventParams, BridgeSendClientEventParams, EventEmitterCallback } from '../../types';
+import { Bridge, BridgeSendBotEventParams, BridgeSendClientEventParams, EventEmitterCallback } from "../../types";
 declare class WebBridge implements Bridge {
     private readonly eventEmitter;
     logsEnabled: boolean;
