@@ -1387,7 +1387,10 @@
          */
         onceWithTimeout(type, timeout) {
             return new Promise((resolve, reject) => {
-                const timer = setTimeout(reject, timeout);
+                const timer = setTimeout(() => {
+                    console.error("Bridge ~ Timeout event", timer);
+                    reject();
+                }, timeout);
                 this.once(type, (event) => {
                     clearTimeout(timer);
                     resolve(event);
@@ -1935,7 +1938,7 @@
         }
     }
 
-    const LIB_VERSION = "1.1.1";
+    const LIB_VERSION = "1.1.2";
 
     const getBridge = () => {
         if (process.env.NODE_ENV === 'test')

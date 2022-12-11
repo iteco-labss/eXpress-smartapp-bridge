@@ -32,7 +32,10 @@ class ExtendedEventEmitter extends EventEmitter {
    */
   onceWithTimeout(type: EmitterEventType, timeout: number): Promise<EmitterEventPayload> {
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(reject, timeout)
+      const timer = setTimeout(() => {
+        console.error("Bridge ~ Timeout event", timer)
+        reject()
+      }, timeout)
 
       this.once(<string>type, (event: EmitterEventPayload) => {
         clearTimeout(timer)
