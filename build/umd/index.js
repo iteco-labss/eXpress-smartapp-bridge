@@ -1759,13 +1759,16 @@
             this.isRenameParamsEnabled = true;
         }
         addGlobalListener() {
-            window.addEventListener('message', (event) => {
-                if (typeof event.data !== 'object' ||
-                    typeof event.data.data !== 'object' ||
-                    typeof event.data.data.type !== 'string')
+            window.addEventListener("message", (event) => {
+                if (getPlatform() === PLATFORM.WEB &&
+                    event.data.handler === HANDLER.EXPRESS)
+                    this.isRenameParamsEnabled = false;
+                if (typeof event.data !== "object" ||
+                    typeof event.data.data !== "object" ||
+                    typeof event.data.data.type !== "string")
                     return;
                 if (this.logsEnabled)
-                    console.log('Bridge ~ Incoming event', event.data);
+                    console.log("Bridge ~ Incoming event", event.data);
                 const { ref, data: { type, ...payload }, files, } = event.data;
                 const emitterType = ref || EVENT_TYPE.RECEIVE;
                 const eventFiles = this.isRenameParamsEnabled ?
@@ -1794,6 +1797,9 @@
             this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback);
         }
         sendEvent({ handler, method, params, files, timeout = RESPONSE_TIMEOUT, guaranteed_delivery_required = false, }) {
+            if (getPlatform() === PLATFORM.WEB &&
+                handler === HANDLER.EXPRESS)
+                this.isRenameParamsEnabled = false;
             const ref = v4(); // UUID to detect express response.
             const payload = {
                 ref,
@@ -1807,11 +1813,12 @@
                 files?.map((file) => camelCaseToSnakeCase(file)) : files;
             const event = files ? { ...payload, files: eventFiles } : payload;
             if (this.logsEnabled)
-                console.log('Bridge ~ Outgoing event', event);
+                console.log("Bridge ~ Outgoing event", event);
             window.parent.postMessage({
                 type: WEB_COMMAND_TYPE,
                 payload: event,
-            }, '*');
+            }, "*");
+            this.isRenameParamsEnabled = true;
             return this.eventEmitter.onceWithTimeout(ref, timeout);
         }
         /**
@@ -1889,7 +1896,7 @@
                 window.parent.postMessage({
                     type: WEB_COMMAND_TYPE_RPC_LOGS,
                     payload: rest,
-                }, '*');
+                }, "*");
                 _log.apply(console, rest);
             };
         }
@@ -1913,7 +1920,7 @@
          */
         enableRenameParams() {
             this.isRenameParamsEnabled = true;
-            console.log('Bridge ~ Enabled renaming event params from camelCase to snake_case and vice versa');
+            console.log("Bridge ~ Enabled renaming event params from camelCase to snake_case and vice versa");
         }
         /**
          * Enabling renaming event params from camelCase to snake_case and vice versa
@@ -1924,11 +1931,11 @@
          */
         disableRenameParams() {
             this.isRenameParamsEnabled = false;
-            console.log('Bridge ~ Disabled renaming event params from camelCase to snake_case and vice versa');
+            console.log("Bridge ~ Disabled renaming event params from camelCase to snake_case and vice versa");
         }
     }
 
-    const LIB_VERSION = "1.1.0";
+    const LIB_VERSION = "1.1.1";
 
     const getBridge = () => {
         if (process.env.NODE_ENV === 'test')
