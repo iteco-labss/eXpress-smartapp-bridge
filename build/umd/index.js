@@ -1938,7 +1938,7 @@
         }
     }
 
-    const LIB_VERSION = "1.1.2";
+    const LIB_VERSION = "1.1.3";
 
     const getBridge = () => {
         if (process.env.NODE_ENV === 'test')
