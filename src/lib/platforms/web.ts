@@ -33,11 +33,13 @@ class WebBridge implements Bridge {
 
   addGlobalListener() {
     window.addEventListener("message", (event: MessageEvent): void => {
+      const isRenameParamsWasEnabled = this.isRenameParamsEnabled
       if (
         getPlatform() === PLATFORM.WEB &&
-        event.data.handler === HANDLER.EXPRESS
+        event.data.handler === HANDLER.EXPRESS &&
+        this.isRenameParamsEnabled
       )
-        this.isRenameParamsEnabled = false
+        this.disableRenameParams()
 
       if (
         typeof event.data !== "object" ||
@@ -65,6 +67,8 @@ class WebBridge implements Bridge {
         payload: this.isRenameParamsEnabled ? snakeCaseToCamelCase(payload) : payload,
         files: eventFiles,
       })
+
+      if (isRenameParamsWasEnabled) this.enableRenameParams()
     })
   }
 
@@ -93,11 +97,13 @@ class WebBridge implements Bridge {
       timeout = RESPONSE_TIMEOUT,
       guaranteed_delivery_required = false,
     }: BridgeSendEventParams) {
+    const isRenameParamsWasEnabled = this.isRenameParamsEnabled
     if (
       getPlatform() === PLATFORM.WEB &&
-      handler === HANDLER.EXPRESS
+      handler === HANDLER.EXPRESS &&
+      this.isRenameParamsEnabled
     )
-      this.isRenameParamsEnabled = false
+      this.disableRenameParams()
 
     const ref = uuid() // UUID to detect express response.
     const payload = {
@@ -123,7 +129,7 @@ class WebBridge implements Bridge {
       },
       "*",
     )
-    this.isRenameParamsEnabled = true
+    if (isRenameParamsWasEnabled) this.enableRenameParams()
 
     return this.eventEmitter.onceWithTimeout(ref, timeout)
   }
