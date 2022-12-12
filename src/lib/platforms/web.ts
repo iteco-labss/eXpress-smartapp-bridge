@@ -39,7 +39,7 @@ class WebBridge implements Bridge {
         event.data.handler === HANDLER.EXPRESS &&
         this.isRenameParamsEnabled
       )
-        this.disableRenameParams()
+        this.isRenameParamsEnabled = false
 
       if (
         typeof event.data !== "object" ||
@@ -68,7 +68,7 @@ class WebBridge implements Bridge {
         files: eventFiles,
       })
 
-      if (isRenameParamsWasEnabled) this.enableRenameParams()
+      if (isRenameParamsWasEnabled) this.isRenameParamsEnabled = true
     })
   }
 
