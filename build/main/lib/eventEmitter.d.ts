@@ -21,9 +21,6 @@ declare class ExtendedEventEmitter extends EventEmitter {
      * emitter.onceWithTimeout('d6910a9d-ea24-5fc6-a654-28781ef21f8f', 20000)
      * // => Promise
      * ```
-     * @param type - Event type, uuid or EVENT_TYPE.RECV for standalone events from client
-     * @param timeout - Timeout in ms
-     * @returns Promise.
      */
     onceWithTimeout(type: EmitterEventType, timeout: number): Promise<EmitterEventPayload>;
 }

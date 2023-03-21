@@ -65,7 +65,7 @@ class AndroidBridge implements Bridge {
       const event = {
         ref,
         type,
-        payload: this.isRenameParamsEnabled? snakeCaseToCamelCase(payload) : payload,
+        payload: this.isRenameParamsEnabled ? snakeCaseToCamelCase(payload) : payload,
         files: eventFiles,
       }
 
@@ -90,13 +90,13 @@ class AndroidBridge implements Bridge {
   }
 
   private sendEvent({
-                        handler,
-                        method,
-                        params,
-                        files,
-                        timeout = RESPONSE_TIMEOUT,
-                        guaranteed_delivery_required = false,
-                      }: BridgeSendEventParams) {
+                      handler,
+                      method,
+                      params,
+                      files,
+                      timeout = RESPONSE_TIMEOUT,
+                      guaranteed_delivery_required = false,
+                    }: BridgeSendEventParams) {
     if (!this.hasCommunicationObject) return Promise.reject()
 
     const ref = uuid() // UUID to detect express response.
@@ -227,6 +227,16 @@ class AndroidBridge implements Bridge {
   disableRenameParams() {
     this.isRenameParamsEnabled = false
     console.log('Bridge ~ Disabled renaming event params from camelCase to snake_case and vice versa')
+  }
+
+  log(data: string | object) {
+    if (!this.hasCommunicationObject) return
+
+    let value: typeof data = ''
+    if (typeof data !== 'string' && typeof data !== 'object') return
+    value = data
+
+    window.express.handleSmartAppEvent(JSON.stringify({ 'SmartApp Log': value }, null, 2))
   }
 }
 

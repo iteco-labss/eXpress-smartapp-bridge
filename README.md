@@ -70,3 +70,11 @@ SmartAppBridge.disableRenameParams()
 ```js
 SmartAppBridge.enableRenameParams()
 ```
+
+### Logging via bridge on mobile devices
+- Search in mobile logs by 'SmartApp Log' string
+- data must be of string or object type
+
+```js
+SmartAppBridge?.log?.(data)
+```

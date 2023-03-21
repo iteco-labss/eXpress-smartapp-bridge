@@ -1,4 +1,4 @@
-import { Bridge, BridgeSendBotEventParams, BridgeSendClientEventParams, EventEmitterCallback } from "../../types";
+import { Bridge, BridgeSendBotEventParams, BridgeSendClientEventParams, EventEmitterCallback } from '../../types';
 declare class WebBridge implements Bridge {
     private readonly eventEmitter;
     logsEnabled: boolean;
@@ -15,7 +15,6 @@ declare class WebBridge implements Bridge {
      *   console.log('event', type, handler, payload)
      * })
      * ```
-     * @param callback - Callback function.
      */
     onReceive(callback: EventEmitterCallback): void;
     private sendEvent;
@@ -37,12 +36,6 @@ declare class WebBridge implements Bridge {
      *     console.log('response', data)
      *   })
      * ```
-     * @param method - Event type.
-     * @param params
-     * @param files
-     * @param is_rename_params_fields - boolean.
-     * @param timeout - Timeout in ms.
-     * @param guaranteed_delivery_required - boolean.
      */
     sendBotEvent({ method, params, files, timeout, guaranteed_delivery_required, }: BridgeSendBotEventParams): Promise<import("../../types").EmitterEventPayload>;
     /**
@@ -63,9 +56,6 @@ declare class WebBridge implements Bridge {
      *     console.log('response', data)
      *   })
      * ```
-     * @param method - Event type.
-     * @param params
-     * @param timeout - Timeout in ms.
      */
     sendClientEvent({ method, params, timeout }: BridgeSendClientEventParams): Promise<import("../../types").EmitterEventPayload>;
     /**
