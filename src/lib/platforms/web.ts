@@ -1,4 +1,4 @@
-import { v4 as uuid } from "uuid"
+import { v4 as uuid } from 'uuid'
 
 import {
   Bridge,
@@ -6,18 +6,19 @@ import {
   BridgeSendClientEventParams,
   BridgeSendEventParams,
   EventEmitterCallback,
-} from "../../types"
-import { camelCaseToSnakeCase, snakeCaseToCamelCase } from "../case"
+} from '../../types'
+import { camelCaseToSnakeCase, snakeCaseToCamelCase } from '../case'
 import {
   EVENT_TYPE,
-  HANDLER, PLATFORM,
+  HANDLER,
+  PLATFORM,
   RESPONSE_TIMEOUT,
   WEB_COMMAND_TYPE,
   WEB_COMMAND_TYPE_RPC,
   WEB_COMMAND_TYPE_RPC_LOGS,
-} from "../constants"
-import ExtendedEventEmitter from "../eventEmitter"
-import getPlatform from "../platformDetector"
+} from '../constants'
+import ExtendedEventEmitter from '../eventEmitter'
+import getPlatform from '../platformDetector'
 
 class WebBridge implements Bridge {
   private readonly eventEmitter: ExtendedEventEmitter
@@ -32,7 +33,7 @@ class WebBridge implements Bridge {
   }
 
   addGlobalListener() {
-    window.addEventListener("message", (event: MessageEvent): void => {
+    window.addEventListener('message', (event: MessageEvent): void => {
       const isRenameParamsWasEnabled = this.isRenameParamsEnabled
       if (
         getPlatform() === PLATFORM.WEB &&
@@ -42,13 +43,13 @@ class WebBridge implements Bridge {
         this.isRenameParamsEnabled = false
 
       if (
-        typeof event.data !== "object" ||
-        typeof event.data.data !== "object" ||
-        typeof event.data.data.type !== "string"
+        typeof event.data !== 'object' ||
+        typeof event.data.data !== 'object' ||
+        typeof event.data.data.type !== 'string'
       )
         return
 
-      if (this.logsEnabled) console.log("Bridge ~ Incoming event", event.data)
+      if (this.logsEnabled) console.log('Bridge ~ Incoming event', event.data)
 
       const {
         ref,
@@ -82,7 +83,6 @@ class WebBridge implements Bridge {
    *   console.log('event', type, handler, payload)
    * })
    * ```
-   * @param callback - Callback function.
    */
   onReceive(callback: EventEmitterCallback) {
     this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback)
@@ -96,14 +96,15 @@ class WebBridge implements Bridge {
       files,
       timeout = RESPONSE_TIMEOUT,
       guaranteed_delivery_required = false,
-    }: BridgeSendEventParams) {
-    const isRenameParamsWasEnabled = this.isRenameParamsEnabled
+    }: BridgeSendEventParams,
+  ) {
+    const isRenameParamsInitiallyEnabled = this.isRenameParamsEnabled
     if (
       getPlatform() === PLATFORM.WEB &&
       handler === HANDLER.EXPRESS &&
       this.isRenameParamsEnabled
     )
-      this.disableRenameParams()
+      this.isRenameParamsEnabled = false
 
     const ref = uuid() // UUID to detect express response.
     const payload = {
@@ -120,16 +121,16 @@ class WebBridge implements Bridge {
 
     const event = files ? { ...payload, files: eventFiles } : payload
 
-    if (this.logsEnabled) console.log("Bridge ~ Outgoing event", event)
+    if (this.logsEnabled) console.log('Bridge ~ Outgoing event', event)
 
     window.parent.postMessage(
       {
         type: WEB_COMMAND_TYPE,
         payload: event,
       },
-      "*",
+      '*',
     )
-    if (isRenameParamsWasEnabled) this.enableRenameParams()
+    if (isRenameParamsInitiallyEnabled) this.isRenameParamsEnabled = true
 
     return this.eventEmitter.onceWithTimeout(ref, timeout)
   }
@@ -152,12 +153,6 @@ class WebBridge implements Bridge {
    *     console.log('response', data)
    *   })
    * ```
-   * @param method - Event type.
-   * @param params
-   * @param files
-   * @param is_rename_params_fields - boolean.
-   * @param timeout - Timeout in ms.
-   * @param guaranteed_delivery_required - boolean.
    */
   sendBotEvent(
     {
@@ -166,7 +161,8 @@ class WebBridge implements Bridge {
       files,
       timeout,
       guaranteed_delivery_required,
-    }: BridgeSendBotEventParams) {
+    }: BridgeSendBotEventParams,
+  ) {
     return this.sendEvent({
       handler: HANDLER.BOTX,
       method,
@@ -195,12 +191,18 @@ class WebBridge implements Bridge {
    *     console.log('response', data)
    *   })
    * ```
-   * @param method - Event type.
-   * @param params
-   * @param timeout - Timeout in ms.
    */
-  sendClientEvent({ method, params, timeout }: BridgeSendClientEventParams) {
-    return this.sendEvent({ handler: HANDLER.EXPRESS, method, params, timeout })
+  sendClientEvent(
+    { method, params, timeout }: BridgeSendClientEventParams,
+  ) {
+    return this.sendEvent(
+      {
+        handler: HANDLER.EXPRESS,
+        method,
+        params,
+        timeout,
+      },
+    )
   }
 
   /**
@@ -221,7 +223,7 @@ class WebBridge implements Bridge {
           type: WEB_COMMAND_TYPE_RPC_LOGS,
           payload: rest,
         },
-        "*",
+        '*',
       )
 
       _log.apply(console, rest)
@@ -249,7 +251,7 @@ class WebBridge implements Bridge {
    */
   enableRenameParams() {
     this.isRenameParamsEnabled = true
-    console.log("Bridge ~ Enabled renaming event params from camelCase to snake_case and vice versa")
+    console.log('Bridge ~ Enabled renaming event params from camelCase to snake_case and vice versa')
   }
 
   /**
@@ -261,7 +263,7 @@ class WebBridge implements Bridge {
    */
   disableRenameParams() {
     this.isRenameParamsEnabled = false
-    console.log("Bridge ~ Disabled renaming event params from camelCase to snake_case and vice versa")
+    console.log('Bridge ~ Disabled renaming event params from camelCase to snake_case and vice versa')
   }
 }
 

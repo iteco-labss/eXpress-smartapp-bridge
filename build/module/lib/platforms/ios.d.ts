@@ -15,7 +15,6 @@ declare class IosBridge implements Bridge {
      *   console.log('event', type, handler, payload)
      * })
      * ```
-     * @param callback - Callback function.
      */
     onReceive(callback: EventEmitterCallback): void;
     private sendEvent;
@@ -38,11 +37,6 @@ declare class IosBridge implements Bridge {
      *     console.log('response', data)
      *   })
      * ```
-     * @param method - Event type.
-     * @param params
-     * @param files
-     * @param timeout - Timeout in ms.
-     * @param guaranteed_delivery_required - boolean.
      */
     sendBotEvent({ method, params, files, timeout, guaranteed_delivery_required, }: BridgeSendBotEventParams): Promise<import("../../types").EmitterEventPayload>;
     /**
@@ -64,11 +58,8 @@ declare class IosBridge implements Bridge {
      *     console.log('response', data)
      *   })
      * ```
-     * @param method - Event type.
-     * @param params
-     * @param timeout - Timeout in ms.
      */
-    sendClientEvent({ method, params, timeout }: BridgeSendClientEventParams): Promise<import("../../types").EmitterEventPayload>;
+    sendClientEvent({ method, params, timeout, }: BridgeSendClientEventParams): Promise<import("../../types").EmitterEventPayload>;
     /**
      * Enabling logs.
      *
@@ -103,5 +94,6 @@ declare class IosBridge implements Bridge {
      * ```
      */
     disableRenameParams(): void;
+    log(data: string | object): void;
 }
 export default IosBridge;

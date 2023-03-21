@@ -105,5 +105,6 @@ declare class AndroidBridge implements Bridge {
      * ```
      */
     disableRenameParams(): void;
+    log(data: string | object): void;
 }
 export default AndroidBridge;

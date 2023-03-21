@@ -34,30 +34,21 @@ class IosBridge implements Bridge {
     }
 
     // Expect json data as string
-    window.handleIosEvent = ({
-                               ref,
-                               data,
-                               files,
-                             }: {
-      readonly ref: string
-      readonly data: {
-        readonly type: string
-      }
-      readonly files: any
-    }): void => {
+    window.handleIosEvent = (
+      {
+        ref,
+        data,
+        files,
+      }: {
+        readonly ref: string
+        readonly data: {
+          readonly type: string
+        }
+        readonly files: any
+      },
+    ): void => {
       if (this.logsEnabled)
-        console.log(
-          'Bridge ~ Incoming event',
-          JSON.stringify(
-            {
-              ref,
-              data,
-              files,
-            },
-            null,
-            2
-          )
-        )
+        console.log('Bridge ~ Incoming event', JSON.stringify({ ref, data, files }, null, 2))
 
       const { type, ...payload } = data
 
@@ -87,20 +78,21 @@ class IosBridge implements Bridge {
    *   console.log('event', type, handler, payload)
    * })
    * ```
-   * @param callback - Callback function.
    */
   onReceive(callback: EventEmitterCallback) {
     this.eventEmitter.on(EVENT_TYPE.RECEIVE, callback)
   }
 
-  private sendEvent({
-                        handler,
-                        method,
-                        params,
-                        files,
-                        timeout = RESPONSE_TIMEOUT,
-                        guaranteed_delivery_required = false,
-                      }: BridgeSendEventParams) {
+  private sendEvent(
+    {
+      handler,
+      method,
+      params,
+      files,
+      timeout = RESPONSE_TIMEOUT,
+      guaranteed_delivery_required = false,
+    }: BridgeSendEventParams,
+  ) {
     if (!this.hasCommunicationObject) return Promise.reject()
 
     const ref = uuid() // UUID to detect express response.
@@ -118,7 +110,8 @@ class IosBridge implements Bridge {
 
     const event = files ? { ...eventProps, files: eventFiles } : eventProps
 
-    if (this.logsEnabled) console.log('Bridge ~ Outgoing event', JSON.stringify(event, null, '  '))
+    if (this.logsEnabled)
+      console.log('Bridge ~ Outgoing event', JSON.stringify(event, null, '  '))
 
     window.webkit.messageHandlers.express.postMessage(event)
 
@@ -144,20 +137,26 @@ class IosBridge implements Bridge {
    *     console.log('response', data)
    *   })
    * ```
-   * @param method - Event type.
-   * @param params
-   * @param files
-   * @param timeout - Timeout in ms.
-   * @param guaranteed_delivery_required - boolean.
    */
-  sendBotEvent({
-                 method,
-                 params,
-                 files,
-                 timeout = RESPONSE_TIMEOUT,
-                 guaranteed_delivery_required,
-               }: BridgeSendBotEventParams) {
-    return this.sendEvent({ handler: HANDLER.BOTX, method, params, files, timeout, guaranteed_delivery_required })
+  sendBotEvent(
+    {
+      method,
+      params,
+      files,
+      timeout = RESPONSE_TIMEOUT,
+      guaranteed_delivery_required,
+    }: BridgeSendBotEventParams,
+  ) {
+    return this.sendEvent(
+      {
+        handler: HANDLER.BOTX,
+        method,
+        params,
+        files,
+        timeout,
+        guaranteed_delivery_required,
+      },
+    )
   }
 
   /**
@@ -179,12 +178,22 @@ class IosBridge implements Bridge {
    *     console.log('response', data)
    *   })
    * ```
-   * @param method - Event type.
-   * @param params
-   * @param timeout - Timeout in ms.
    */
-  sendClientEvent({ method, params, timeout = RESPONSE_TIMEOUT }: BridgeSendClientEventParams) {
-    return this.sendEvent({ handler: HANDLER.EXPRESS, method, params, timeout })
+  sendClientEvent(
+    {
+      method,
+      params,
+      timeout = RESPONSE_TIMEOUT,
+    }: BridgeSendClientEventParams,
+  ) {
+    return this.sendEvent(
+      {
+        handler: HANDLER.EXPRESS,
+        method,
+        params,
+        timeout,
+      },
+    )
   }
 
   /**
@@ -233,6 +242,19 @@ class IosBridge implements Bridge {
   disableRenameParams() {
     this.isRenameParamsEnabled = false
     console.log('Bridge ~ Disabled renaming event params from camelCase to snake_case and vice versa')
+  }
+
+  log(data: string | object) {
+    if (!this.hasCommunicationObject) return
+
+    let value: typeof data = ''
+    if (typeof data !== 'string') {
+      value = data
+    } else if (typeof data !== 'object') {
+      value = JSON.stringify(data, null, 2)
+    }
+
+    window.webkit.messageHandlers.express.postMessage({ 'SmartApp Log': value })
   }
 }
 
