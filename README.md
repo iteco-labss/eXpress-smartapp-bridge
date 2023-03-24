@@ -72,8 +72,14 @@ SmartAppBridge.enableRenameParams()
 ```
 
 ### Logging via bridge on mobile devices
+- log your data inside a smart app:
+```typescript
+  import { Bridge as bridge } from '@unlimited/smartapp-bridge'
+
+  const data: string | value = { logs: 'test' }
+  bridge?.log?.(data)
+```
 - Search in mobile logs by 'SmartApp Log' string
-- data must be of string or object type
 
 ```js
 SmartAppBridge?.log?.(data)

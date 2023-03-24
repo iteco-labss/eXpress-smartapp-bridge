@@ -245,14 +245,14 @@ class IosBridge implements Bridge {
   }
 
   log(data: string | object) {
-    if (!this.hasCommunicationObject) return
+    if (!this.hasCommunicationObject || !data) return
 
     let value: typeof data = ''
-    if (typeof data !== 'string') {
+    if (typeof data === 'string') {
       value = data
-    } else if (typeof data !== 'object') {
+    } else if (typeof data === 'object') {
       value = JSON.stringify(data, null, 2)
-    }
+    } else return
 
     window.webkit.messageHandlers.express.postMessage({ 'SmartApp Log': value })
   }
