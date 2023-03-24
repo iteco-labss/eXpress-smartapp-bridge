@@ -230,13 +230,14 @@ class AndroidBridge implements Bridge {
   }
 
   log(data: string | object) {
-    if (!this.hasCommunicationObject) return
+    if (
+      (!this.hasCommunicationObject || !data) ||
+      (typeof data !== 'string' && typeof data !== 'object')
+    ) return
 
-    let value: typeof data = ''
-    if (typeof data !== 'string' && typeof data !== 'object') return
-    value = data
-
-    window.express.handleSmartAppEvent(JSON.stringify({ 'SmartApp Log': value }, null, 2))
+    window.express.handleSmartAppEvent(
+      JSON.stringify({ 'SmartApp Log': data }, null, 2),
+    )
   }
 }
 
