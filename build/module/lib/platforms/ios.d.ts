@@ -3,7 +3,7 @@ declare class IosBridge implements Bridge {
     private readonly eventEmitter;
     private readonly hasCommunicationObject;
     logsEnabled: boolean;
-    isRenameParamsEnabled: boolean;
+    isRenameParamsEnabledForBotx: boolean;
     constructor();
     /**
      * Set callback function to handle events without **ref**

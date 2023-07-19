@@ -2,7 +2,7 @@ import { Bridge, BridgeSendBotEventParams, BridgeSendClientEventParams, EventEmi
 declare class WebBridge implements Bridge {
     private readonly eventEmitter;
     logsEnabled: boolean;
-    isRenameParamsEnabled: boolean;
+    isRenameParamsEnabledForBotx: boolean;
     constructor();
     addGlobalListener(): void;
     /**
