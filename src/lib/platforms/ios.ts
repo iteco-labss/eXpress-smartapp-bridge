@@ -16,17 +16,17 @@ class IosBridge implements Bridge {
   private readonly eventEmitter: ExtendedEventEmitter
   private readonly hasCommunicationObject: boolean
   logsEnabled: boolean
-  isRenameParamsEnabled: boolean
+  isRenameParamsEnabledForBotx: boolean
 
   constructor() {
     this.hasCommunicationObject =
-      window.webkit &&
-      window.webkit.messageHandlers &&
-      window.webkit.messageHandlers.express &&
-      !!window.webkit.messageHandlers.express.postMessage
+        window.webkit &&
+        window.webkit.messageHandlers &&
+        window.webkit.messageHandlers.express &&
+        !!window.webkit.messageHandlers.express.postMessage
     this.eventEmitter = new ExtendedEventEmitter()
     this.logsEnabled = false
-    this.isRenameParamsEnabled = true
+    this.isRenameParamsEnabledForBotx = true
 
     if (!this.hasCommunicationObject) {
       log('No method "express.postMessage", cannot send message to iOS')
@@ -35,17 +35,17 @@ class IosBridge implements Bridge {
 
     // Expect json data as string
     window.handleIosEvent = (
-      {
-        ref,
-        data,
-        files,
-      }: {
-        readonly ref: string
-        readonly data: {
-          readonly type: string
-        }
-        readonly files: any
-      },
+        {
+          ref,
+          data,
+          files,
+        }: {
+          readonly ref: string
+          readonly data: {
+            readonly type: string
+          }
+          readonly files: any
+        },
     ): void => {
       if (this.logsEnabled)
         console.log('Bridge ~ Incoming event', JSON.stringify({ ref, data, files }, null, 2))
@@ -53,14 +53,15 @@ class IosBridge implements Bridge {
       const { type, ...payload } = data
 
       const emitterType = ref || EVENT_TYPE.RECEIVE
+      // const isRenameParamsEnabled = data.handler === HANDLER.BOTX ? this.isRenameParamsEnabledForBotx : true // TODO uncomment when client is ready
 
-      const eventFiles = this.isRenameParamsEnabled ?
-        files?.map((file: any) => snakeCaseToCamelCase(file)) : files
+      const eventFiles = this.isRenameParamsEnabledForBotx ?
+          files?.map((file: any) => snakeCaseToCamelCase(file)) : files
 
       const event = {
         ref,
         type,
-        payload: this.isRenameParamsEnabled ? snakeCaseToCamelCase(payload) : payload,
+        payload: this.isRenameParamsEnabledForBotx ? snakeCaseToCamelCase(payload) : payload,
         files: eventFiles,
       }
 
@@ -84,29 +85,30 @@ class IosBridge implements Bridge {
   }
 
   private sendEvent(
-    {
-      handler,
-      method,
-      params,
-      files,
-      timeout = RESPONSE_TIMEOUT,
-      guaranteed_delivery_required = false,
-    }: BridgeSendEventParams,
+      {
+        handler,
+        method,
+        params,
+        files,
+        timeout = RESPONSE_TIMEOUT,
+        guaranteed_delivery_required = false,
+      }: BridgeSendEventParams,
   ) {
     if (!this.hasCommunicationObject) return Promise.reject()
 
     const ref = uuid() // UUID to detect express response.
+    const isRenameParamsEnabled = handler === HANDLER.BOTX ? this.isRenameParamsEnabledForBotx : true
     const eventProps = {
       ref,
       type: WEB_COMMAND_TYPE_RPC,
       method,
       handler,
-      payload: this.isRenameParamsEnabled ? camelCaseToSnakeCase(params) : params,
+      payload: isRenameParamsEnabled ? camelCaseToSnakeCase(params) : params,
       guaranteed_delivery_required,
     }
 
-    const eventFiles = this.isRenameParamsEnabled ?
-      files?.map((file: any) => camelCaseToSnakeCase(file)) : files
+    const eventFiles = isRenameParamsEnabled ?
+        files?.map((file: any) => camelCaseToSnakeCase(file)) : files
 
     const event = files ? { ...eventProps, files: eventFiles } : eventProps
 
@@ -139,23 +141,23 @@ class IosBridge implements Bridge {
    * ```
    */
   sendBotEvent(
-    {
-      method,
-      params,
-      files,
-      timeout = RESPONSE_TIMEOUT,
-      guaranteed_delivery_required,
-    }: BridgeSendBotEventParams,
-  ) {
-    return this.sendEvent(
       {
-        handler: HANDLER.BOTX,
         method,
         params,
         files,
-        timeout,
+        timeout = RESPONSE_TIMEOUT,
         guaranteed_delivery_required,
-      },
+      }: BridgeSendBotEventParams,
+  ) {
+    return this.sendEvent(
+        {
+          handler: HANDLER.BOTX,
+          method,
+          params,
+          files,
+          timeout,
+          guaranteed_delivery_required,
+        },
     )
   }
 
@@ -180,19 +182,19 @@ class IosBridge implements Bridge {
    * ```
    */
   sendClientEvent(
-    {
-      method,
-      params,
-      timeout = RESPONSE_TIMEOUT,
-    }: BridgeSendClientEventParams,
-  ) {
-    return this.sendEvent(
       {
-        handler: HANDLER.EXPRESS,
         method,
         params,
-        timeout,
-      },
+        timeout = RESPONSE_TIMEOUT,
+      }: BridgeSendClientEventParams,
+  ) {
+    return this.sendEvent(
+        {
+          handler: HANDLER.EXPRESS,
+          method,
+          params,
+          timeout,
+        },
     )
   }
 
@@ -228,7 +230,7 @@ class IosBridge implements Bridge {
    * ```
    */
   enableRenameParams() {
-    this.isRenameParamsEnabled = true
+    this.isRenameParamsEnabledForBotx = true
     console.log('Bridge ~ Enabled renaming event params from camelCase to snake_case and vice versa')
   }
 
@@ -240,7 +242,7 @@ class IosBridge implements Bridge {
    * ```
    */
   disableRenameParams() {
-    this.isRenameParamsEnabled = false
+    this.isRenameParamsEnabledForBotx = false
     console.log('Bridge ~ Disabled renaming event params from camelCase to snake_case and vice versa')
   }
 
