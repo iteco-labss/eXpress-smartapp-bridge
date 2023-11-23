@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import camelCase from 'lodash/camelCase'
-import snakeCase from 'lodash/snakeCase'
+import { camelCase, snakeCase } from 'lodash-es'
 
 export const isUuid = (value: string) => {
   return /[0-9a-fA-F-]{32}/.test(value)
