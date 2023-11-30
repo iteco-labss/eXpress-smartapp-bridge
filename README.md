@@ -71,6 +71,16 @@ SmartAppBridge.disableRenameParams()
 SmartAppBridge.enableRenameParams()
 ```
 
+### Enable/disable logging smart app events
+
+```js
+SmartAppBridge.enableLogs()
+```
+
+```js
+SmartAppBridge.disableLogs()
+```
+
 ### Logging via bridge on mobile devices
 - log your data inside a smart app:
 ```typescript
