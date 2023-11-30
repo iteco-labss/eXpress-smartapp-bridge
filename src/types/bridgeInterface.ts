@@ -24,5 +24,7 @@ export type Bridge = {
   readonly sendClientEvent: (event: BridgeSendClientEventParams) => Promise<EmitterEventPayload>
   readonly disableRenameParams: () => void
   readonly enableRenameParams: () => void
+  readonly enableLogs: () => void
+  readonly disableLogs: () => void
   readonly log?: (data: string | object) => void
 }
