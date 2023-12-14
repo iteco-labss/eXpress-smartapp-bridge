@@ -7,7 +7,6 @@ import {
   BridgeSendEventParams,
   EventEmitterCallback,
 } from '../../types'
-import { camelCaseToSnakeCase, snakeCaseToCamelCase } from '../case'
 import { EVENT_TYPE, HANDLER, RESPONSE_TIMEOUT, WEB_COMMAND_TYPE_RPC } from '../constants'
 import ExtendedEventEmitter from '../eventEmitter'
 import log from '../logger'
@@ -16,7 +15,6 @@ class IosBridge implements Bridge {
   private readonly eventEmitter: ExtendedEventEmitter
   private readonly hasCommunicationObject: boolean
   logsEnabled: boolean
-  isRenameParamsEnabledForBotx: boolean
 
   constructor() {
     this.hasCommunicationObject =
@@ -26,7 +24,6 @@ class IosBridge implements Bridge {
         !!window.webkit.messageHandlers.express.postMessage
     this.eventEmitter = new ExtendedEventEmitter()
     this.logsEnabled = false
-    this.isRenameParamsEnabledForBotx = true
 
     if (!this.hasCommunicationObject) {
       log('No method "express.postMessage", cannot send message to iOS')
@@ -53,16 +50,12 @@ class IosBridge implements Bridge {
       const { type, ...payload } = data
 
       const emitterType = ref || EVENT_TYPE.RECEIVE
-      // const isRenameParamsEnabled = data.handler === HANDLER.BOTX ? this.isRenameParamsEnabledForBotx : true // TODO uncomment when client is ready
-
-      const eventFiles = this.isRenameParamsEnabledForBotx ?
-          files?.map((file: any) => snakeCaseToCamelCase(file)) : files
 
       const event = {
         ref,
         type,
-        payload: this.isRenameParamsEnabledForBotx ? snakeCaseToCamelCase(payload) : payload,
-        files: eventFiles,
+        payload,
+        files,
       }
 
       this.eventEmitter.emit(emitterType, event)
@@ -97,20 +90,16 @@ class IosBridge implements Bridge {
     if (!this.hasCommunicationObject) return Promise.reject()
 
     const ref = uuid() // UUID to detect express response.
-    const isRenameParamsEnabled = handler === HANDLER.BOTX ? this.isRenameParamsEnabledForBotx : true
     const eventProps = {
       ref,
       type: WEB_COMMAND_TYPE_RPC,
       method,
       handler,
-      payload: isRenameParamsEnabled ? camelCaseToSnakeCase(params) : params,
+      payload: params,
       guaranteed_delivery_required,
     }
 
-    const eventFiles = isRenameParamsEnabled ?
-        files?.map((file: any) => camelCaseToSnakeCase(file)) : files
-
-    const event = files ? { ...eventProps, files: eventFiles } : eventProps
+    const event = files ? { ...eventProps, files } : eventProps
 
     if (this.logsEnabled)
       console.log('Bridge ~ Outgoing event', JSON.stringify(event, null, '  '))
@@ -228,10 +217,10 @@ class IosBridge implements Bridge {
    * bridge
    *    .enableRenameParams()
    * ```
+   * @deprecated since version 2.0
    */
   enableRenameParams() {
-    this.isRenameParamsEnabledForBotx = true
-    console.log('Bridge ~ Enabled renaming event params from camelCase to snake_case and vice versa')
+    console.log('Bridge ~ WARN: enableRenameParams() is deprecated and has no effect')
   }
 
   /**
@@ -240,10 +229,10 @@ class IosBridge implements Bridge {
    * bridge
    *    .disableRenameParams()
    * ```
+   * @deprecated since version 2.0
    */
   disableRenameParams() {
-    this.isRenameParamsEnabledForBotx = false
-    console.log('Bridge ~ Disabled renaming event params from camelCase to snake_case and vice versa')
+    console.log('Bridge ~ WARN: disableRenameParams() is deprecated and has no effect')
   }
 
   log(data: string | object) {

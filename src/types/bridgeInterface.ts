@@ -22,7 +22,13 @@ export type Bridge = {
   readonly onReceive: (callback: EventEmitterCallback) => void
   readonly sendBotEvent: (event: BridgeSendBotEventParams) => Promise<EmitterEventPayload>
   readonly sendClientEvent: (event: BridgeSendClientEventParams) => Promise<EmitterEventPayload>
+  /**
+   * @deprecated since version 2.0
+   */
   readonly disableRenameParams: () => void
+  /**
+   * @deprecated since version 2.0
+   */
   readonly enableRenameParams: () => void
   readonly enableLogs: () => void
   readonly disableLogs: () => void

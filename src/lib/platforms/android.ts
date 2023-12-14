@@ -7,7 +7,6 @@ import {
   BridgeSendEventParams,
   EventEmitterCallback,
 } from '../../types'
-import { camelCaseToSnakeCase, snakeCaseToCamelCase } from '../case'
 import { EVENT_TYPE, HANDLER, RESPONSE_TIMEOUT, WEB_COMMAND_TYPE_RPC } from '../constants'
 import ExtendedEventEmitter from '../eventEmitter'
 import log from '../logger'
@@ -16,13 +15,11 @@ class AndroidBridge implements Bridge {
   private readonly eventEmitter: ExtendedEventEmitter
   private readonly hasCommunicationObject: boolean
   logsEnabled: boolean
-  isRenameParamsEnabledForBotx: boolean
 
   constructor() {
     this.hasCommunicationObject = typeof window.express !== 'undefined' && !!window.express.handleSmartAppEvent
     this.eventEmitter = new ExtendedEventEmitter()
     this.logsEnabled = false
-    this.isRenameParamsEnabledForBotx = true
 
     if (!this.hasCommunicationObject) {
       log('No method "express.handleSmartAppEvent", cannot send message to Android')
@@ -52,15 +49,11 @@ class AndroidBridge implements Bridge {
 
       const emitterType = ref || EVENT_TYPE.RECEIVE
 
-      // const isRenameParamsEnabled = data.handler === HANDLER.BOTX ? this.isRenameParamsEnabledForBotx : true // TODO uncomment when client is ready
-      const eventFiles = this.isRenameParamsEnabledForBotx ?
-          files?.map((file: any) => snakeCaseToCamelCase(file)) : files
-
       const event = {
         ref,
         type,
-        payload: this.isRenameParamsEnabledForBotx ? snakeCaseToCamelCase(payload) : payload,
-        files: eventFiles,
+        payload,
+        files,
       }
 
       this.eventEmitter.emit(emitterType, event)
@@ -93,7 +86,6 @@ class AndroidBridge implements Bridge {
         guaranteed_delivery_required = false,
       }: BridgeSendEventParams) {
     if (!this.hasCommunicationObject) return Promise.reject()
-    const isRenameParamsEnabled = handler === HANDLER.BOTX ? this.isRenameParamsEnabledForBotx : true
 
     const ref = uuid() // UUID to detect express response.
     const eventParams = {
@@ -101,15 +93,12 @@ class AndroidBridge implements Bridge {
       type: WEB_COMMAND_TYPE_RPC,
       method,
       handler,
-      payload: isRenameParamsEnabled ? camelCaseToSnakeCase(params) : params,
+      payload: params,
       guaranteed_delivery_required,
     }
 
-    const eventFiles = isRenameParamsEnabled ?
-        files?.map((file: any) => camelCaseToSnakeCase(file)) : files
-
     const event = JSON.stringify(
-        files ? { ...eventParams, files: eventFiles } : eventParams,
+        files ? { ...eventParams, files } : eventParams,
     )
 
     if (this.logsEnabled) console.log('Bridge ~ Outgoing event', JSON.stringify(event, null, '  '))
@@ -222,10 +211,10 @@ class AndroidBridge implements Bridge {
    * bridge
    *    .enableRenameParams()
    * ```
+   * @deprecated since version 2.0
    */
   enableRenameParams() {
-    this.isRenameParamsEnabledForBotx = true
-    console.log('Bridge ~ Enabled renaming event params from camelCase to snake_case and vice versa')
+    console.log('Bridge ~ WARN: enableRenameParams() is deprecated and has no effect')
   }
 
   /**
@@ -234,10 +223,10 @@ class AndroidBridge implements Bridge {
    * bridge
    *    .disableRenameParams()
    * ```
+   * @deprecated since version 2.0
    */
   disableRenameParams() {
-    this.isRenameParamsEnabledForBotx = false
-    console.log('Bridge ~ Disabled renaming event params from camelCase to snake_case and vice versa')
+    console.log('Bridge ~ WARN: disableRenameParams() is deprecated and has no effect')
   }
 
   log(data: string | object) {

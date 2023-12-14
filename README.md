@@ -59,18 +59,6 @@ SmartAppBridge.onRecieve(({ type, payload }) => {
 })
 ```
 
-### Enable/Disable renaming event params from camelCase to snake_case and vice versa
-- Params are renamed from camelCase to snake_case and vice versa by default
-- Call after sending `ready` event
-
-```js
-SmartAppBridge.disableRenameParams()
-```
-
-```js
-SmartAppBridge.enableRenameParams()
-```
-
 ### Enable/disable logging smart app events
 
 ```js
